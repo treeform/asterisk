@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+
+<div class="holder">
+    
+    
+    <textarea class="pad">from pcode import *
+" this \"sdfsd\" sdfsdf"
+class outbuffer:
+    buffer = []
+    indent = 0
+
+def out(*args):
+    for a in args:
+        outbuffer.buffer.append(str(a))
+
+def rm(arg):
+    if outbuffer.buffer[-1] == arg:
+        outbuffer.buffer.pop()
+
+def outln(*args):
+    for a in args:
+        outbuffer.buffer.append(str(a))
+    outbuffer.buffer.append("\n" + " "*outbuffer.indent)
+
+def indent(n):
+    outbuffer.indent += n
+
+BASE_TYPES = ["float", "int"]
+
+defs = {}     
+def getdef(var):
+    if var not in defs:
+        raise Exception(" %r is not defined" % var)
+    return defs[var]
+def setdef(var, type):
+    if var in defs:
+        raise Exception(" %r is already defined" % var)
+    defs[var] = type
+          
+def look(code):
+    if isinstance(code, Body):
+        indent(1)
+        outln("{")
+        for s in code.statements:
+            look(s)
+            outln(";")
+        indent(-1)
+        outln()
+        outln("}")
+    elif isinstance(code, If):
+        for case,body in zip(code.cases, code.bodies):
+            out("if")
+            out("(")
+            look(case)
+            out(")")
+            indent(1)
+            outln("{")
+            look(body)
+            indent(-1)
+            outln()
+            out("}")
+            out("else ")
+        if code.default:
+            indent(1)
+            outln("{")
+            look(code.default)
+            indent(-1)
+            outln()
+            out("}")
+        rm("else ")
+    elif isinstance(code, FnDef):
+        out("function ")
+        out(code.fn)
+        out("(")
+        for [a, v] in code.args:
+            out(a)
+            out(",")
+        rm(",")
+        out(")")
+        look(code.body)
+    elif isinstance(code, StructDef):
+        out("// struct ", code.name, " : ", repr(code.fields))
+    elif isinstance(code, New):
+        out("new(",StructDef.structs[code.struct].size,")")
+    elif isinstance(code, Free):
+        out("free(",code.var,")")
+    elif isinstance(code, SetStruct):
+        field = StructDef.structs[getdef(code.var)].fields[code.field]
+        if field.type in BASE_TYPES:
+            out("f32[",code.var,"+",field.offset,"]=")
+        else:
+            raise Exception("cant set composite field")
+        look(code.value)
+    elif isinstance(code, GetStruct):
+        field = StructDef.structs[getdef(code.var)].fields[code.field]
+        if field.type in BASE_TYPES:
+            out("f32[",code.var,"+",field.offset,"]")
+        else:
+            out("(",code.var,"+",field.offset,")")
+
+    elif isinstance(code, Op):
+        op = code.fn
+        if op in Op.SWITCH:
+            op = Op.SWITCH[op]
+        for a in code.args:
+            look(a)
+            out(op)
+        rm(op)
+    elif isinstance(code, Var):
+        out("var ")
+        for [type, var] in code.vars:
+            out(var)
+            setdef(var, type)
+            #if v is not None:
+            #    out("=")
+            #    look(v)
+            out(",")
+        rm(",")
+    elif isinstance(code, FnCall):
+        out(code.fn)
+        out("(")
+        for a in code.args:
+            look(a)
+            out(",")
+        rm(",")
+        out(")")
+    elif isinstance(code, Atom):
+        if code.kind == 'var':
+            getdef(code.str)
+        out(code.str)
+    else:
+        print "wtf", code
+        raise "error"
+def generate(pcode):
+    look(pcode)
+    return "".join(outbuffer.buffer)
+    </textarea>
+    <div class="ghost"></div>
+    <div id="caret-line"><span id="caret-text"></span><span id="caret-char">&#x2588;</span></div>
+   
+</div>
+
+
+
+</body>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+<script src="front.js"></script>
+</html>
+
