@@ -1,4 +1,4 @@
 asterisk
 ========
 
-Web based code editor.
+Web based code editor written in Coffee Script.
