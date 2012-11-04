@@ -6,6 +6,29 @@ requestAnimFrame = window.requestAnimationFrame or
 
 print = (args...) -> console.log(args...)
 
+keybord_key = (e) ->
+    print e
+    k = []
+    if e.metaKey
+        k.push("meta")
+    if e.ctrlKey
+        k.push("ctrl")
+    if e.altKey
+        k.push("alt")
+    if e.shiftKey
+        k.push("shift")
+        
+    if e.which == 9
+        k.push("tab")
+    else if e.which == 13
+        k.push("enter")
+    else if e.which == 27
+        k.push("esc")
+    else
+        k.push(String.fromCharCode(e.which).toLowerCase())
+    return k.join("-")
+
+
 specs =
     python:
         NAME: "python"
@@ -118,14 +141,14 @@ class Editor
 
         # updates       
         @$doc.keydown (e) =>
-            print "here"
             @update()
-            @key(e)
-        @$doc.keyup(@update)
+            return @key(e)
+        @$doc.keyup (e) =>
+            @update()
+            return true
         @$doc.keypress (e) =>
             @update()
-            print "here"
-        
+            return true
         @$doc.mousedown => 
             @mousedown=true
             @update()
@@ -145,10 +168,29 @@ class Editor
         # does not update if not changed        
         @old_text = ""
         @old_caret = [0,0]
+        
+        @keymap = 
+            'esc': @reset
+            'alt-l': => @show_promt("#load")
+            'alt-g': => @show_promt("#goto")
+            'alt-a': => @show_promt("#command")
+            'alt-s': => @show_promt("#search")
+            
+          
+        @reset()
           
         # loop that redoes the work when needed
         @requset_update = true
         @workloop()
+        
+    reset: =>
+        $(".prompt").hide()
+        $("#pad").focus()
+        
+    show_promt: (p) ->
+        $(p).show()
+        $(p+" input").focus()
+        print "load promt", p
         
     update: =>
         @requset_update = true
@@ -236,7 +278,13 @@ class Editor
             print "update", performance.now()-now, "ms"
     
     key: (e) ->
-        print "key", e.which
+        key = keybord_key(e)
+        print "key press", key
+        if @keymap[key]?
+            @keymap[key]()
+            e.stopPropagation()
+            return false
+        return true
         
     workloop: =>
         if @requset_update

@@ -131,7 +131,7 @@ body {
     background-color: gray;
 }
 
-.prompt input {
+.prompt input[text] {
     width: 300px;
 }
 

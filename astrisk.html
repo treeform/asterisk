@@ -8,7 +8,7 @@
 <div class="holder">
     
     
-    <textarea class="pad">from pcode import *
+    <textarea id="pad" class="pad">from pcode import *
 " this \"sdfsd\" sdfsdf"
 class outbuffer:
     buffer = []
@@ -145,21 +145,26 @@ def generate(pcode):
 </div>
 
 <div id="load" class="prompt">
-    Load: <input id="load-input">
+    Load: <input id="load-input" type="text">
 </div>
-<!---
 <div id="command" class="prompt">
-    Command:<input id="command-input">
+    Command:<input id="command-input" type="text">
+    <button>?</button>
 </div>
 <div id="goto" class="prompt">
-    Goto: <input id="goto-input">
+    Goto: <input id="goto-input" type="text">
 </div>
 <div id="search" class="prompt">
-    Search: <input id="search-input">
-    Replace: <input id="replace-input">
+    Search: <input id="search-input" type="text">
+    <button>next</button>
+    <button>prev</button>
+    Replace: <input id="replace-input" type="text">
+    <button>next</button>
+    <button>prev</button>
+    <button>all</button>
+    Ingore Case: <input type="checkbox" id="case-input">
     Regex: <input type="checkbox" id="regex-input">
 </div>
--->
 
 </body>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
