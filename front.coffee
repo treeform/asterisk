@@ -2,7 +2,7 @@ requestAnimFrame = window.requestAnimationFrame or
         window.webkitRequestAnimationFrame or
         window.mozRequestAnimationFrame or
         window.oRequestAnimationFrame  or
-        (-> (cb) window.setTimeout(cb, 1000 / 60))
+        ((cb) -> window.setTimeout(cb, 1000 / 60))
 
 print = (args...) -> console.log(args...)
 
@@ -42,32 +42,40 @@ class Tokenizer
         colored = []
         norm = 0
         old_c = " "
-        for c, i in line
+        i = 0
+        while i < line.length
+            c = line[i]
+                
+           
             if c == spec.QUOTATION_MARK1
-                n = 1
-                while c != line[i+n] and i+n < line.length 
-                    if line[i+n] == spec.ESCAPECHAR
-                        n+=1
-                    n+=1
-                colored.push(["string",line[i..i+n]])
-                i += n
+                start = i
+                i += 1
+                while c != line[i] and i < line.length 
+                    if line[i] == spec.ESCAPECHAR
+                        i += 1
+                    i += 1
+                colored.push(["string",line[start..i]])
+                i += 1
                 continue
-        
+            
             if c == spec.LINE_COMMENT
                 colored.push(["comment",line[i..]])
-                i = line.length
-                continue
+                break
+              
             if old_c in spec.DELIMITERS
                 skip = @keywords(c, i, line, colored, spec)
+                print skip
                 if skip?
                     i = skip
                     continue
-                last = colored[colored.length-1]    
+                    
+            last = colored[colored.length-1]    
             if not last? or last[0] != "text"
                 colored.push(["text", c])
             else
                 last[1] += c
             old_c = c
+            i += 1
        
         out = []
         for [cls, words] in colored
@@ -88,8 +96,8 @@ class Tokenizer
                         if w == t and last in spec.DELIMITERS
                             colored.push(["key"+k, w])
                             i += t.length
-                            return i-1
-        return
+                            return i
+        return 
     
 class Editor
 
@@ -109,9 +117,15 @@ class Editor
         @$caret_char = $("#caret-char")
 
         # updates       
-        @$doc.keypress(@update)
+        @$doc.keydown (e) =>
+            print "here"
+            @update()
+            @key(e)
         @$doc.keyup(@update)
-        @$doc.keydown(@update)
+        @$doc.keypress (e) =>
+            @update()
+            print "here"
+        
         @$doc.mousedown => 
             @mousedown=true
             @update()
@@ -140,7 +154,8 @@ class Editor
         @requset_update = true
 
     real_update: ->
-        now = performance.now()
+        if performance?
+            now = performance.now()
         
         # adjust hight and width of things
         h = @$win.height()
@@ -217,8 +232,12 @@ class Editor
         
         h = @$ghost.height()
         @$pad.height(h+100)
-        print "update", performance.now()-now, "ms"
-
+        if performance?
+            print "update", performance.now()-now, "ms"
+    
+    key: (e) ->
+        print "key", e.which
+        
     workloop: =>
         if @requset_update
             @real_update() 
