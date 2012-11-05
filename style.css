@@ -1,3 +1,26 @@
+.pad       { background: #1E2325; color: #babdb6; }
+.selection { background: #391f21 !important; color: #959793 !important; }
+.gutter    { background: #0a001f; border-right: 1px solid #aaa; }
+.cursor    { border-left: 1px solid white !important; }
+.undefined { color: #DDD }
+.comment   { color: #656763 }
+.atom      { color: #eeeeec; }
+.number    {  color: #729fcf  }
+.attribute { color: #ffd500; }
+
+.operator  { color: #fcaf3e; }
+.string    { color: #8ae234; }
+.string-2  { color: #9d1e15; }
+.meta      { color: #8CA48A; }
+.tag       { color: #99b2ff; }
+.error     { color: #9d1e15; }
+.variable-2{ color: #ffd500; }
+
+.key1      { color: #fcaf3e; }
+.key2      { color: #fcaf3e; }
+.key3      { color: #ff9e59; }
+
+
 * {
     padding: 0px;
     margin: 0px;
@@ -19,30 +42,6 @@ body {
     height: 100px;
     overflow: auto;
     background-color: #111;
-}
-
-.comment {
-    color: gray;
-}
-.string {
-    color: green;
-}
-.key1 {
-    color: blue;
-}
-.key2 {
-    color: cyan;
-}
-.key3 {
-    color: orange;
-}
-
-
-.mark {
-    color: red;
-}
-.str {
-    color: green;
 }
 
 #caret-line {
@@ -76,6 +75,7 @@ body {
     z-index: 1;
     white-space: pre-wrap;
 }
+
 .highlight {
     position: absolute;
     top: 100px;
@@ -89,6 +89,7 @@ body {
     background-color: #222;
 
 }
+
 .pad {
     position: absolute;
     top: 100px;
@@ -97,8 +98,7 @@ body {
     
     font-family: monospace;
     font-size: 12px;
-    background-color: rgba(0,0,0,0);
-
+    
     border: none;
     width: 100%;
     height: 4000px;
@@ -111,15 +111,8 @@ body {
     
     opacity:0.02; 
     
-    color: rgba(0,0,0,0);
-    
-
 }
 
-.pad::selection, .pad::-moz-selection, .pad::-webkit-selection { 
-    background: red;
-    color: red;
-}
 
 .prompt {
     z-index: 2;
