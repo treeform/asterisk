@@ -7,7 +7,6 @@ requestAnimFrame = window.requestAnimationFrame or
 print = (args...) -> console.log(args...)
 
 keybord_key = (e) ->
-    print e
     k = []
     if e.metaKey
         k.push("meta")
@@ -87,7 +86,6 @@ class Tokenizer
               
             if old_c in spec.DELIMITERS
                 skip = @keywords(c, i, line, colored, spec)
-                print skip
                 if skip?
                     i = skip
                     continue
@@ -121,10 +119,22 @@ class Tokenizer
                             i += t.length
                             return i
         return 
+
+class Connection
+
+    constructor: ->
+        host = window.document.location.host.replace(/:.*/, '')
+        @socket = io.connect("ws://#{host}:8080")
+        @socket.on 'news', (data) ->
+            console.log(data)
+            @socket.emit('my other event', { my: 'data' })
+         
     
 class Editor
 
     constructor: ->
+        
+        @con = new Connection()
         
         # grab common elements
         @$doc = $(document) 
@@ -280,6 +290,7 @@ class Editor
     key: (e) ->
         key = keybord_key(e)
         print "key press", key
+        @con.socket.emit("keypress", key)
         if @keymap[key]?
             @keymap[key]()
             e.stopPropagation()
