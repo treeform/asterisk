@@ -1,4 +1,4 @@
-.pad       { background: #1E2325; color: #babdb6; }
+.ghost     { color: #babdb6; }
 .selection { background: #391f21 !important; color: #959793 !important; }
 .gutter    { background: #0a001f; border-right: 1px solid #aaa; }
 .cursor    { border-left: 1px solid white !important; }
@@ -24,16 +24,14 @@
 * {
     padding: 0px;
     margin: 0px;
-    font-family: monospace;
-    font-size: 12px;
+    font-family: Courier, monospace;
+    font-size: 13px;
+    font-weight:bold;
 }
 
 body {
     overflow: hidden;
-    background-color: red;
-    
-    font-family: monospace;
-    font-size: 12px;
+    background-color: black;
     color: white;
 }
 
@@ -53,52 +51,33 @@ body {
     white-space: pre-wrap;
 }
 #caret-text {
-    color: rgba(0,0,0,0);   
+    color: rgba(0,0,0,0);
 }
 #caret-char {
-    color: #555;   
+    color: #555;
     background-color: #500;
-}
-
-.selection {
-    background-color: blue;
 }
 
 .ghost {
     position: absolute;
     top: 100px;
-
-    font-family: monospace;
-    font-size: 12px;
-    color: white;
-    
-    z-index: 1;
+   z-index: 1;
     white-space: pre-wrap;
 }
 
 .highlight {
     position: absolute;
     top: 100px;
-
-    font-family: monospace;
-    font-size: 12px;
     color: #222;
-    
     z-index: 0;
     white-space: pre-wrap;
-    background-color: #222;
-
 }
 
 .pad {
     position: absolute;
     top: 100px;
-    
+
     z-index: 2;
-    
-    font-family: monospace;
-    font-size: 12px;
-    
     border: none;
     width: 100%;
     height: 4000px;
@@ -106,11 +85,11 @@ body {
     resize: none;
     /* Remove the blue glow */
     outline: none;
-    
+
     overflow: hidden;
-    
-    opacity:0.02; 
-    
+
+    opacity:0.02;
+
 }
 
 

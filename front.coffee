@@ -1,4 +1,4 @@
-requestAnimFrame = window.requestAnimationFrame or 
+requestAnimFrame = window.requestAnimationFrame or
         window.webkitRequestAnimationFrame or
         window.mozRequestAnimationFrame or
         window.oRequestAnimationFrame  or
@@ -16,7 +16,7 @@ keybord_key = (e) ->
         k.push("alt")
     if e.shiftKey
         k.push("shift")
-        
+
     if e.which == 9
         k.push("tab")
     else if e.which == 13
@@ -52,12 +52,12 @@ class Tokenizer
     constructor: ->
         @token_cache = {}
         @spec = specs.python
-        
+
     tokenize: (@line) ->
         if @token_cache[@line]
             return @token_cache[@line]
         return @token_cache[line] = @tokenize_line(@line)
-        
+
     tokenize_line: ->
         line = @line
         spec = @spec
@@ -67,44 +67,44 @@ class Tokenizer
         i = 0
         while i < line.length
             c = line[i]
-                
-           
+
+
             if c == spec.QUOTATION_MARK1
                 start = i
                 i += 1
-                while c != line[i] and i < line.length 
+                while c != line[i] and i < line.length
                     if line[i] == spec.ESCAPECHAR
                         i += 1
                     i += 1
                 colored.push(["string",line[start..i]])
                 i += 1
                 continue
-            
+
             if c == spec.LINE_COMMENT
                 colored.push(["comment",line[i..]])
                 break
-              
+
             if old_c in spec.DELIMITERS
                 skip = @keywords(c, i, line, colored, spec)
                 if skip?
                     i = skip
                     continue
-                    
-            last = colored[colored.length-1]    
+
+            last = colored[colored.length-1]
             if not last? or last[0] != "text"
                 colored.push(["text", c])
             else
                 last[1] += c
             old_c = c
             i += 1
-       
+
         out = []
         for [cls, words] in colored
             out.push("<span class='#{cls}'>#{words}</span>")
         out.push("\n")
-        
+
         return [colored, out.join("")]
-        
+
     keywords: (c, i, line, colored, spec) ->
         for k in [0..6]
             if spec["KEY"+k]?
@@ -118,7 +118,7 @@ class Tokenizer
                             colored.push(["key"+k, w])
                             i += t.length
                             return i
-        return 
+        return
 
 class Connection
 
@@ -128,16 +128,16 @@ class Connection
         @socket.on 'news', (data) ->
             console.log(data)
             @socket.emit('my other event', { my: 'data' })
-         
-    
+
+
 class Editor
 
     constructor: ->
-        
-        @con = new Connection()
-        
+
+        #@con = new Connection()
+
         # grab common elements
-        @$doc = $(document) 
+        @$doc = $(document)
         @$win = $(window)
         @$holder = $(".holder")
         @$pad = $(".pad")
@@ -149,7 +149,7 @@ class Editor
         @$caret_text = $("#caret-text")
         @$caret_char = $("#caret-char")
 
-        # updates       
+        # updates
         @$doc.keydown (e) =>
             @update()
             return @key(e)
@@ -159,10 +159,10 @@ class Editor
         @$doc.keypress (e) =>
             @update()
             return true
-        @$doc.mousedown => 
+        @$doc.mousedown =>
             @mousedown=true
             @update()
-        @$doc.mousemove => 
+        @$doc.mousemove =>
             if @mousedown
                 @update()
         @$doc.mouseup =>
@@ -170,45 +170,45 @@ class Editor
             @update()
         @$win.resize(@update)
         @$doc.click(@update)
-        
+
         # keeps all the highlight state
         @lines = []
         @tokenizer = new Tokenizer()
-        
-        # does not update if not changed        
+
+        # does not update if not changed
         @old_text = ""
         @old_caret = [0,0]
-        
-        @keymap = 
+
+        @keymap =
             'esc': @reset
             'alt-l': => @show_promt("#load")
             'alt-g': => @show_promt("#goto")
             'alt-a': => @show_promt("#command")
             'alt-s': => @show_promt("#search")
-            
-          
+
+
         @reset()
-          
+
         # loop that redoes the work when needed
         @requset_update = true
         @workloop()
-        
+
     reset: =>
         $(".prompt").hide()
         $("#pad").focus()
-        
+
     show_promt: (p) ->
         $(p).show()
         $(p+" input").focus()
         print "load promt", p
-        
+
     update: =>
         @requset_update = true
 
     real_update: ->
-        if performance?
+        if performance? and performance.now?
             now = performance.now()
-        
+
         # adjust hight and width of things
         h = @$win.height()
         w = @$win.width()
@@ -217,10 +217,10 @@ class Editor
         @$pad.width(w)
         @$ghost.width(w)
         @$highlight.width(w)
-        
+
         # get the current text
         text = @$pad.val()
-        
+
         # high light if it has changed
         if @old_text != text
             @old_text = text
@@ -229,11 +229,11 @@ class Editor
             for line, i in lines
                 end = start + line.length + 1
                 if @lines[i]?
-                    oldline = @lines[i] 
+                    oldline = @lines[i]
                     oldline[1] = start
                     oldline[2] = end
                     if oldline[3] != line
-                        [colored, html] = @tokenizer.tokenize(line)   
+                        [colored, html] = @tokenizer.tokenize(line)
                         oldline[3] = line
                         $("#line"+i).html(html)
                 else
@@ -248,12 +248,12 @@ class Editor
             while lines.length < @lines.length
                 l = @lines.pop()
                 $("#line"+l[0]).remove()
-                
-    
-        # update caret if it has changed caret 
+
+
+        # update caret if it has changed caret
         at = @$pad[0].selectionStart
         end = @$pad[0].selectionEnd
-        
+
         if @old_caret != [at, end]
             @old_caret = [at, end]
             if at == end
@@ -263,7 +263,7 @@ class Editor
                             caret_text = text[line[1]..at-1]
                         else
                             caret_text = ""
-                        #print "cur on ", line[0], caret_text 
+                        #print "cur on ", line[0], caret_text
                         top = $("#line"+line[0]).position().top + 100
                         @$caret_text.html(caret_text)
                         @$caret_char.html("&#x2588;")
@@ -281,26 +281,27 @@ class Editor
                         @$caret_text.html(caret_text)
                         @$caret_line.css("top", top)
                         @$caret_char.html(text[at..end-1])
-        
+
         h = @$ghost.height()
         @$pad.height(h+100)
-        if performance?
+        if performance? and performance.now?
             print "update", performance.now()-now, "ms"
-    
+
     key: (e) ->
         key = keybord_key(e)
         print "key press", key
-        @con.socket.emit("keypress", key)
+        #@con.socket.emit("keypress", key)
         if @keymap[key]?
             @keymap[key]()
             e.stopPropagation()
             return false
         return true
-        
+
     workloop: =>
         if @requset_update
-            @real_update() 
+            @real_update()
             @requset_update = false
         requestAnimFrame(@workloop)
-    
+
 $ new Editor()
+
