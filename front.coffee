@@ -57,8 +57,8 @@ class Tokenizer
         if @token_cache[@line]
             return @token_cache[@line]
         return @token_cache[line] = @tokenize_line(@line)
-
-    tokenize_line: ->
+        
+    colorize_line: ->
         line = @line
         spec = @spec
         colored = []
@@ -97,7 +97,11 @@ class Tokenizer
                 last[1] += c
             old_c = c
             i += 1
-
+            
+        return colored 
+        
+    tokenize_line: ->
+        colored = @colorize_line()
         out = []
         for [cls, words] in colored
             out.push("<span class='#{cls}'>#{words}</span>")
@@ -129,11 +133,7 @@ class Connection
             console.log(data)
             @socket.emit('my other event', { my: 'data' })
 
-
 esc = ->
-    print "esc"
-    $("div.popup").hide()
-    # focus on the editor
     editor.focus()
     
 class GotoLine
@@ -143,7 +143,7 @@ class GotoLine
         @$input = $("#goto-input")
         @$input.keyup (e) =>
             if keybord_key(e) == "enter"
-                @enter
+                @enter()
                 
     envoke: =>
         esc()
@@ -154,29 +154,10 @@ class GotoLine
             
     enter: ->       
         esc()
-        $input = $(e.currentTarget)
-        line = parseInt($input.val())
+        line = parseInt(@$input.val())
         if line > 0
             editor.goto_line(line)
 
-            
-goto_line = ->
-    esc()
-    $("#goto-box").show()
-    $input = $("#goto-input")
-    $input.focus()
-    $input[0].selectionStart = 0
-    $input[0].selectionEnd = $input.val().length
-    
-$("#goto-box").hide()
-$("#goto-input").keyup (e) ->
-    if keybord_key(e) == "enter"
-        esc()
-        $input = $(e.currentTarget)
-        line = parseInt($input.val())
-        if line > 0
-            editor.goto_line(line)
-        
 
 open_file = ->
     esc()
@@ -353,6 +334,23 @@ $("#file-input").keyup (e) ->
                 success: suggest
         else
             suggest([])
+
+
+class MiniMap
+
+    constructor: ->
+        print "mini map"
+        @$minimap_outer = $("#mini-map")
+        @$minimap = $("#mini-map .inner")
+        
+        
+    real_update: ->
+        @$minimap.css
+            height: editor.height
+            width: 200
+            #top: -700
+        
+            
     
 class Editor
 
@@ -405,24 +403,12 @@ class Editor
         @old_text = ""
         @old_caret = [0,0]
 
-        @keymap =
-            'esc': @reset
-            'alt-l': => @show_promt("#load")
-            'alt-g': => @show_promt("#goto")
-            'alt-a': => @show_promt("#command")
-            'alt-s': => @show_promt("#search")
-
-
-        @reset()
-
-        # loop that redoes the work when needed
-        @requset_update = true
-        @workloop()
+        #@minimap = new MiniMap()
 
         @goto_cmd = new GotoLine()
         
         @keymap = 
-            'esc': esc
+            'esc': @focus
             'alt-g': @goto_cmd.envoke
             #'alt-g': => @show_promt("#goto")
             #'alt-a': => @show_promt("#command")
@@ -436,7 +422,8 @@ class Editor
         @workloop()
         
     focus: =>
-        $("#pad").focus()
+        $("div.popup").hide()
+        @$pad.focus()
         @update()
                 
     show_promt: (p) ->
@@ -452,16 +439,29 @@ class Editor
             now = performance.now()
 
         # adjust hight and width of things
-        h = @$win.height()
-        w = @$win.width()
-        @$holder.height(h)
-        @$holder.width(w)
-        @$pad.width(w)
-        @$ghost.width(w)
-        @$highlight.width(w)
+
+        @height = @$win.height()
+        @width = @$win.width()
+        @$holder.height(@height)
+        @$holder.width(@width)
+        @$pad.width(@width)
+        @$ghost.width(@width)
+        @$highlight.width(@width)
 
         # get the current text
         text = @$pad.val()
+        
+        set_line = (i, html) =>
+            $("#line#{i}").html(html)
+            $("#mm#{i}").html(html) if @minimap
+            
+        add_line = (i, html) =>
+            @$ghost.append("<span id='line#{i}'>#{html}</span>")
+            @minimap.$minimap.append("<span id='line#{i}'>#{html}</span>") if @minimap
+
+        rm_line = (i) =>
+            $("#line#{i}").remove()
+            $("#mm#{i}").remove() if @minimap
 
         # high light if it has changed
         if @old_text != text
@@ -477,22 +477,17 @@ class Editor
                     if oldline[3] != line
                         [colored, html] = @tokenizer.tokenize(line)
                         oldline[3] = line
-                        $("#line"+i).html(html)
+                        set_line(i, html)
                 else
                     [colored, html] = @tokenizer.tokenize(line)
                     @lines.push([i, start, end, line])
-                    out = []
-                    out.push("<span id='line#{i}'>")
-                    out.push(html)
-                    out.push("</span>")
-                    @$ghost.append(out.join(""))
+                    add_line(i, html)
                 start = end
             while lines.length < @lines.length
                 l = @lines.pop()
-                $("#line"+l[0]).remove()
-
-
-        # update caret if it has changed caret
+                rm_line(l[0])
+    
+        # update caret if it has changed caret 
         at = @$pad[0].selectionStart
         end = @$pad[0].selectionEnd
 
@@ -524,10 +519,12 @@ class Editor
                         @$caret_line.css("top", top)
                         @$caret_char.html(text[at..end-1])
 
-        h = @$ghost.height()
-        @$pad.height(h+100)
+        @full_height = @$ghost.height()
+        @$pad.height(@full_height+100)
         if performance? and performance.now?
             print "update", performance.now()-now, "ms"
+    
+        @minimap?.real_update()
     
     goto_line: (line_num) ->
         line = @lines[line_num] ? @lines[@lines.length - 1]
