@@ -130,12 +130,236 @@ class Connection
             @socket.emit('my other event', { my: 'data' })
 
 
+esc = ->
+    print "esc"
+    $("div.popup").hide()
+    # focus on the editor
+    editor.focus()
+    
+class GotoLine
+
+    constructor: ->
+        @$box = $("#goto-box")
+        @$input = $("#goto-input")
+        @$input.keyup (e) =>
+            if keybord_key(e) == "enter"
+                @enter
+                
+    envoke: =>
+        esc()
+        @$box.show()
+        @$input.focus()
+        @$input[0].selectionStart = 0
+        @$input[0].selectionEnd = @$input.val().length
+            
+    enter: ->       
+        esc()
+        $input = $(e.currentTarget)
+        line = parseInt($input.val())
+        if line > 0
+            editor.goto_line(line)
+
+            
+goto_line = ->
+    esc()
+    $("#goto-box").show()
+    $input = $("#goto-input")
+    $input.focus()
+    $input[0].selectionStart = 0
+    $input[0].selectionEnd = $input.val().length
+    
+$("#goto-box").hide()
+$("#goto-input").keyup (e) ->
+    if keybord_key(e) == "enter"
+        esc()
+        $input = $(e.currentTarget)
+        line = parseInt($input.val())
+        if line > 0
+            editor.goto_line(line)
+        
+
+open_file = ->
+    esc()
+    $("#open-box").show()
+    $("#file-input").focus()
+
+save_file = (pad) ->
+    print "save"
+    text = pad.edit.getValue()
+    # strip trailing spaces
+
+    tabsize = pad.edit.getOption('tabSize')
+    space = (" " for _ in [0...tabsize]).join("")
+    text = text.replace(/\t/g, space)
+    text = text.replace(/[ \r]*\n/g,"\n").replace(/\s*$/g, "\n")
+    $.ajax "/save",
+        type: "POST"
+        data:
+            path: pad.filename
+            text: text
+        dataType: "json"
+        success: => info "saved", pad.filename
+        error: => warn "could not save", pad.filename
+
+search = (pad) ->
+    esc()
+    $("#search-box").show()
+    $("#search-input").focus()
+    selected_word = pad.edit.getSelection()
+    if selected_word
+        $("#search-input").val(selected_word)
+
+command = ->
+    $("#command-box").show()
+    $("#command-input").focus()
+    
+
+
+$("#command-box").hide()
+$("#command-input").keyup (e) ->
+    editor = current_pad.edit
+    if e.which == ENTER
+        $input = $(e.currentTarget)
+        query = $input.val()
+        if not query
+            return
+        js = CoffeeScript.compile(query)
+        eval(js)
+        esc()
+
+last_pos = null
+last_query = null
+$("#search-box").hide()
+$("#search-input").keyup (e) ->
+    editor = current_pad.edit
+    m.clear() for m in marked
+    marked = []
+
+    $input = $(e.currentTarget)
+    query = $input.val()
+    if not query or query.length == 1
+        return
+    cursor = editor.getSearchCursor(query)
+    while cursor.findNext()
+        t = editor.markText(cursor.from(), cursor.to(), "searched")
+        marked.push(t)
+
+    if e.which == ENTER
+        cur_pos = editor.getCursor()
+        if last_query != query
+            last_pos = null
+
+        if e.shiftKey
+            cursor = editor.getSearchCursor(query, last_pos-1 or cur_pos-1)
+            # backwards
+            if not cursor.findPrevious()
+                # wrap lines
+                cursor = editor.getSearchCursor(query)
+                if not cursor.findPrevious()
+                    return
+        else
+            cursor = editor.getSearchCursor(query, last_pos or cur_pos)
+            # forward
+            if not cursor.findNext()
+                #warp lines
+                cursor = editor.getSearchCursor(query)
+                if not cursor.findNext()
+                    return
+
+        editor.setSelection(cursor.from(), cursor.to())
+        last_query = query
+        last_pos = cursor.to()
+
+$("#replace-input").keyup (e) ->
+    editor = current_pad.edit
+    m.clear() for m in marked
+    marked = []
+    $input = $(e.currentTarget)
+    text = $("#search-input").val()
+    replace = $input.val()
+
+    return if not text
+
+    if false and e.which == ENTER
+        # replace all
+        cursor = editor.getSearchCursor(text)
+        while cursor.findNext()
+            cursor.replace(replace)
+
+    if e.which == ENTER
+        # replace all
+        cursor = editor.getSearchCursor(text, off, false)
+        if e.shiftKey
+            c = cursor.findPrevious()
+        else
+            c = cursor.findNext()
+        if c
+            cursor.replace(replace)
+            editor.setSelection(cursor.from(), cursor.to())
+
+
+$("#open-box").hide()
+$("#file-input").keyup (e) ->
+    $input = $(e.currentTarget)
+    $sug = $input.prev()
+    s = $input.val()
+    m = s.match("(.*)/([^/]*$)")
+    if m
+        dir = m[1]
+        s = m[2]
+    else
+        dir = base_dir
+
+    if e.which == ESC
+        $input.val("")
+        $input.parent().hide()
+        current_pad.edit.focus()
+
+    else if e.which == ENTER
+        input = $input.val()
+        current_pad.open_file(input)
+        current_pad.focus()
+        resize()
+        $input.val("")
+        esc()
+    else if e.which == UP or e.which == DOWN
+        chosen = $sug.find(".highlight")
+        if chosen.size() == 0
+            chosen = $sug.children().last()
+        else
+            if e.which == UP
+                next = chosen.prev()
+            else
+                next = chosen.next()
+            if next.size() > 0
+                chosen.removeClass("highlight")
+                next.addClass("highlight")
+                chosen = next
+        chosen.addClass("highlight")
+        $input.val(chosen.text())
+    else
+        suggest = (files) ->
+            $sug.children().remove()
+            for f in files
+                f = f.replace(s,"<b>#{s}</b>")
+                $sug.append("<div class='sug'>#{f}<div>")
+        if s != ""
+            $.ajax "/suggest",
+                dataType: "json"
+                data:
+                    "s": s
+                    "dir": dir
+                error: (e) -> warn "error", e
+                success: suggest
+        else
+            suggest([])
+    
 class Editor
 
     constructor: ->
-
-        #@con = new Connection()
-
+        window.editor = @
+        @con = new Connection()
+        
         # grab common elements
         @$doc = $(document)
         @$win = $(window)
@@ -155,11 +379,13 @@ class Editor
             return @key(e)
         @$doc.keyup (e) =>
             @update()
+            e.preventDefault()
             return true
         @$doc.keypress (e) =>
             @update()
             return true
-        @$doc.mousedown =>
+
+        @$doc.mousedown => 
             @mousedown=true
             @update()
         @$doc.mousemove =>
@@ -193,10 +419,26 @@ class Editor
         @requset_update = true
         @workloop()
 
-    reset: =>
-        $(".prompt").hide()
+        @goto_cmd = new GotoLine()
+        
+        @keymap = 
+            'esc': esc
+            'alt-g': @goto_cmd.envoke
+            #'alt-g': => @show_promt("#goto")
+            #'alt-a': => @show_promt("#command")
+            #'alt-s': => @show_promt("#search")
+            
+          
+        @focus()
+          
+        # loop that redoes the work when needed
+        @requset_update = true
+        @workloop()
+        
+    focus: =>
         $("#pad").focus()
-
+        @update()
+                
     show_promt: (p) ->
         $(p).show()
         $(p+" input").focus()
@@ -286,6 +528,24 @@ class Editor
         @$pad.height(h+100)
         if performance? and performance.now?
             print "update", performance.now()-now, "ms"
+    
+    goto_line: (line_num) ->
+        line = @lines[line_num] ? @lines[@lines.length - 1]
+        print line[1]
+        @$pad[0].selectionStart = line[1]
+        @$pad[0].selectionEnd = line[1]
+        @scroll_line(line[0])
+
+    scroll_line: (line_num) ->
+        line = @lines[line_num] ? @lines[@lines.length - 1]
+        y = @get_line_y(line[0])
+        y -= @$win.height()/2
+        print "scroll to y", y
+        @$holder.animate(scrollTop: y)
+
+    get_line_y: (line_num) ->
+        top = $("#line"+line_num).position().top + 100
+        return top
 
     key: (e) ->
         key = keybord_key(e)

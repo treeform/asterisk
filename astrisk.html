@@ -144,27 +144,25 @@ def generate(pcode):
     <div id="caret-line"><span id="caret-text"></span><span id="caret-char">&#x2588;</span></div>
 </div>
 
-<div id="load" class="prompt">
-    Load: <input id="load-input" type="text">
-</div>
-<div id="command" class="prompt">
-    Command:<input id="command-input" type="text">
-    <button>?</button>
-</div>
-<div id="goto" class="prompt">
-    Goto: <input id="goto-input" type="text">
-</div>
-<div id="search" class="prompt">
-    Search: <input id="search-input" type="text">
-    <button>next</button>
-    <button>prev</button>
-    Replace: <input id="replace-input" type="text">
-    <button>next</button>
-    <button>prev</button>
-    <button>all</button>
-    Ingore Case: <input type="checkbox" id="case-input">
-    Regex: <input type="checkbox" id="regex-input">
-</div>
+
+<div id="goto-box" class="popup">
+    <div></div>
+    Goto: <input id="goto-input" />
+  </div>
+  <div id="command-box" class="popup">
+    <div></div>
+    Command: <input id="command-input" />
+  </div>
+  <div id="open-box" class="popup">
+    <div></div>
+    Open: <input id="file-input" />
+  </div>
+  <div id="search-box" class="popup">
+    Search:
+    <input type="text"  id="search-input">
+    Replace:
+    <input type="text" id="replace-input">
+  </div>
 
 </body>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>

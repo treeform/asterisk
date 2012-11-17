@@ -107,3 +107,45 @@ body {
     width: 300px;
 }
 
+
+
+input {
+  background: #111;
+  border: none;
+  color: #999;
+  line-height: 14px;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 14px;
+  padding:0px;
+  margin:0px;
+}
+
+.popup {
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  color: #AAA;
+  background: #111;
+  z-index: 10;
+  border-top: solid 2px #E39F3B;
+}
+
+#open-box input {
+    width: 300px;
+}
+
+#open-box div {
+    margin: 2px;
+}
+
+#search-box input {
+    width: 200px;
+}
+
+#command-box input {
+    width: 350px;
+}
+
+
