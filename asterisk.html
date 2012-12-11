@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>(*) Astrisk</title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>    
+</head>
+<body>
+<!-- <div id="mini-map"><div class="inner"></div></div> -->
+<div class="holder">
+    
+    
+    <textarea id="pad" class="pad"></textarea>
+    <div class="ghost"></div>
+    <div id="caret-line"><span id="caret-text"></span><span id="caret-char">&#x2588;</span></div>
+</div>
+
+
+<div id="goto-box" class="popup">
+    <div></div>
+    Goto: <input id="goto-input" />
+</div>
+<div id="command-box" class="popup">
+    <div></div>
+    Command: <input id="command-input" />
+</div>
+<div id="open-box" class="popup">
+    <div></div>
+    Open: <input id="open-input" value="asterisk.coffee"/>
+</div>
+<div id="search-box" class="popup">
+    Search:
+    <input type="text"  id="search-input">
+    Replace:
+    <input type="text" id="replace-input">
+</div>
+
+</body>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+<script src="socket.io.min.js"></script>
+<script src="front.js"></script>
+
+</html>
+

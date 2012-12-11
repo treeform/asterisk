@@ -69,7 +69,7 @@ class Tokenizer
             c = line[i]
 
 
-            if c == spec.QUOTATION_MARK1
+            if c == spec.QUOTATION_MARK1 or c == spec.QUOTATION_MARK2
                 start = i
                 i += 1
                 while c != line[i] and i < line.length
@@ -129,9 +129,20 @@ class Connection
     constructor: ->
         host = window.document.location.host.replace(/:.*/, '')
         @socket = io.connect("ws://#{host}:8080")
-        @socket.on 'news', (data) ->
-            console.log(data)
-            @socket.emit('my other event', { my: 'data' })
+        @socket.on 'connected', (data) ->
+            console.log("connected with", data.iden)
+            #@socket.emit('my other event', { my: 'data' })
+        
+        @socket.on 'open-push', (res) ->
+            print "open-push", res.filename
+            editor.filename = res.filename
+            $("title").html(res.filename)
+            editor.$pad.val(res.data)
+            editor.update()
+        
+        @socket.on 'error-push', (error) ->
+            print "error-push", error.message
+            
 
 esc = ->
     editor.focus()
@@ -157,6 +168,28 @@ class GotoLine
         line = parseInt(@$input.val())
         if line > 0
             editor.goto_line(line)
+
+class OpenFile
+
+    constructor: ->
+        @$box = $("#open-box")
+        @$input = $("#open-input")
+        @$input.keyup (e) =>
+            if keybord_key(e) == "enter"
+                @enter()
+                
+    envoke: =>
+        esc()
+        @$box.show()
+        @$input.focus()
+        @$input[0].selectionStart = 0
+        @$input[0].selectionEnd = @$input.val().length
+            
+    enter: ->       
+        esc()
+        filename = @$input.val()
+        print "open", filename
+        editor.con.socket.emit("open", filename:filename)
 
 
 open_file = ->
@@ -357,6 +390,7 @@ class Editor
     constructor: ->
         window.editor = @
         @con = new Connection()
+        @filename = "foo"
         
         # grab common elements
         @$doc = $(document)
@@ -406,10 +440,16 @@ class Editor
         #@minimap = new MiniMap()
 
         @goto_cmd = new GotoLine()
+        @open_cmd = new OpenFile()
+        
         
         @keymap = 
             'esc': @focus
-            'alt-g': @goto_cmd.envoke
+            'ctrl-g': @goto_cmd.envoke
+            'ctrl-l': @open_cmd.envoke
+            'ctrl-s': @save
+            
+            
             #'alt-g': => @show_promt("#goto")
             #'alt-a': => @show_promt("#command")
             #'alt-s': => @show_promt("#search")
@@ -420,7 +460,12 @@ class Editor
         # loop that redoes the work when needed
         @requset_update = true
         @workloop()
-        
+    
+    save: =>
+        @con.socket.emit "save",
+            filename: @filename
+            data: @$pad.val()
+
     focus: =>
         $("div.popup").hide()
         @$pad.focus()
@@ -547,7 +592,7 @@ class Editor
     key: (e) ->
         key = keybord_key(e)
         print "key press", key
-        #@con.socket.emit("keypress", key)
+        @con.socket.emit("keypress", key)
         if @keymap[key]?
             @keymap[key]()
             e.stopPropagation()
