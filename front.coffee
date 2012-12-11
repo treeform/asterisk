@@ -6,6 +6,15 @@ requestAnimFrame = window.requestAnimationFrame or
 
 print = (args...) -> console.log(args...)
 
+KEY_MAP = 
+    9: "tab"
+    13: "enter"
+    27: "esc"
+    37: "left"
+    38: "up"
+    39: "right"
+    40: "down"
+
 keybord_key = (e) ->
     k = []
     if e.metaKey
@@ -17,14 +26,11 @@ keybord_key = (e) ->
     if e.shiftKey
         k.push("shift")
 
-    if e.which == 9
-        k.push("tab")
-    else if e.which == 13
-        k.push("enter")
-    else if e.which == 27
-        k.push("esc")
+    if e.which of KEY_MAP
+        k.push(KEY_MAP[e.which])
     else
         k.push(String.fromCharCode(e.which).toLowerCase())
+    
     return k.join("-")
 
 
@@ -133,17 +139,13 @@ class Connection
             console.log("connected with", data.iden)
             #@socket.emit('my other event', { my: 'data' })
         
-        @socket.on 'open-push', (res) ->
-            print "open-push", res.filename
-            editor.filename = res.filename
-            $("title").html(res.filename)
-            editor.$pad.val(res.data)
-            editor.update()
+        @socket.on 'open-push', (res) -> editor.open_cmd.open_push(res)
+        @socket.on 'suggest-push', (res) -> editor.open_cmd.open_suggest_push(res)
         
         @socket.on 'error-push', (error) ->
             print "error-push", error.message
-            
-
+        
+        
 esc = ->
     editor.focus()
     
@@ -174,9 +176,32 @@ class OpenFile
     constructor: ->
         @$box = $("#open-box")
         @$input = $("#open-input")
-        @$input.keyup (e) =>
-            if keybord_key(e) == "enter"
-                @enter()
+        @$sug = $("#open-sugest")
+        @$input.keyup @keyup
+
+    keyup: (e) =>
+        print @$input.val()
+        key = keybord_key(e)
+        print key
+        if key == "enter"
+            @enter()
+        else if key == "up" or key == "down"
+            chosen = @$sug.find(".sug-highlight")
+            if chosen.size() == 0
+                chosen = @$sug.children().last()
+            else
+                if key == "up"
+                    next = chosen.prev()
+                else
+                    next = chosen.next()
+                if next.size() > 0
+                    chosen.removeClass("sug-highlight")
+                    next.addClass("sug-highlight")
+                    chosen = next
+            chosen.addClass("sug-highlight")
+            @$input.val(chosen.text())
+        else
+            editor.con.socket.emit("suggest", query:@$input.val(), directory:".")
                 
     envoke: =>
         esc()
@@ -190,30 +215,21 @@ class OpenFile
         filename = @$input.val()
         print "open", filename
         editor.con.socket.emit("open", filename:filename)
-
-
-open_file = ->
-    esc()
-    $("#open-box").show()
-    $("#file-input").focus()
-
-save_file = (pad) ->
-    print "save"
-    text = pad.edit.getValue()
-    # strip trailing spaces
-
-    tabsize = pad.edit.getOption('tabSize')
-    space = (" " for _ in [0...tabsize]).join("")
-    text = text.replace(/\t/g, space)
-    text = text.replace(/[ \r]*\n/g,"\n").replace(/\s*$/g, "\n")
-    $.ajax "/save",
-        type: "POST"
-        data:
-            path: pad.filename
-            text: text
-        dataType: "json"
-        success: => info "saved", pad.filename
-        error: => warn "could not save", pad.filename
+    
+    open_push: (res) ->
+        print "open-push", res.filename
+        editor.filename = res.filename
+        $("title").html(res.filename)
+        editor.$pad.val(res.data)
+        editor.update()
+        
+    open_suggest_push: (res) ->
+        print res.files
+        @$sug.children().remove()
+        search = @$input.val()
+        for file in res.files
+            file = file.replace(search,"<b>#{search}</b>")
+            @$sug.append("<div class='sug'>#{file}<div>")
 
 search = (pad) ->
     esc()
@@ -311,62 +327,6 @@ $("#replace-input").keyup (e) ->
             cursor.replace(replace)
             editor.setSelection(cursor.from(), cursor.to())
 
-
-$("#open-box").hide()
-$("#file-input").keyup (e) ->
-    $input = $(e.currentTarget)
-    $sug = $input.prev()
-    s = $input.val()
-    m = s.match("(.*)/([^/]*$)")
-    if m
-        dir = m[1]
-        s = m[2]
-    else
-        dir = base_dir
-
-    if e.which == ESC
-        $input.val("")
-        $input.parent().hide()
-        current_pad.edit.focus()
-
-    else if e.which == ENTER
-        input = $input.val()
-        current_pad.open_file(input)
-        current_pad.focus()
-        resize()
-        $input.val("")
-        esc()
-    else if e.which == UP or e.which == DOWN
-        chosen = $sug.find(".highlight")
-        if chosen.size() == 0
-            chosen = $sug.children().last()
-        else
-            if e.which == UP
-                next = chosen.prev()
-            else
-                next = chosen.next()
-            if next.size() > 0
-                chosen.removeClass("highlight")
-                next.addClass("highlight")
-                chosen = next
-        chosen.addClass("highlight")
-        $input.val(chosen.text())
-    else
-        suggest = (files) ->
-            $sug.children().remove()
-            for f in files
-                f = f.replace(s,"<b>#{s}</b>")
-                $sug.append("<div class='sug'>#{f}<div>")
-        if s != ""
-            $.ajax "/suggest",
-                dataType: "json"
-                data:
-                    "s": s
-                    "dir": dir
-                error: (e) -> warn "error", e
-                success: suggest
-        else
-            suggest([])
 
 
 class MiniMap
@@ -548,7 +508,7 @@ class Editor
                         #print "cur on ", line[0], caret_text
                         top = $("#line"+line[0]).position().top + 100
                         @$caret_text.html(caret_text)
-                        @$caret_char.html("&#x2588;")
+                        @$caret_char.html("&nbsp;")
                         @$caret_line.css("top", top)
             else
                 if at > end
@@ -605,5 +565,6 @@ class Editor
             @requset_update = false
         requestAnimFrame(@workloop)
 
-$ new Editor()
+$ ->
+    new Editor()
 

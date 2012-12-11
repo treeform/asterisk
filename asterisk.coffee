@@ -11,7 +11,42 @@ print = (args...) -> console.log args...
 gen_iden = -> Math.random().toString(32)[2..]
 
 io = require('socket.io').listen(8080)
+events = require('events')
+path = require('path')
+child_process = require('child_process')
 fs = require('fs')
+http = require('http');
+
+server = http.createServer (req, res) ->
+    if req.url.length == 0 or req.url[0] != "/"
+        return
+    if req.url == "/"
+        req.url = "/asterisk.html"
+    try    
+        buffer = fs.readFileSync(req.url[1..])    
+        res.end(buffer)
+    catch e
+        response.writeHead(404, {"Content-Type": "text/plain"})
+        response.write("404 Not Found\n")
+        response.end()
+server.listen(1988)
+
+findem = (dir, s) ->
+    ev = new events.EventEmitter()
+    if s.length > 0
+        s = "-name '*#{s}*'"
+    ls = child_process.exec(
+        "find #{dir} #{s} -maxdepth 5")
+    files = []
+    ls.data = ""
+    ls.stdout.on "data", (data) ->
+        ls.data += data
+    ls.on "exit", ->
+        for line in ls.data.split("\n")
+            if line.length > 0
+                files.push(line)
+        ev.emit("end", files)
+    return ev
 
 clients = {}
 
@@ -52,6 +87,24 @@ io.sockets.on 'connection', (socket) ->
     socket.on 'save', (req) ->
         print "save", req.filename
         fs.writeFileSync(req.filename, req.data, 'utf8')
+
+    socket.on 'suggest', (req) ->
+        s = req.query
+        dir = req.directory
+        print "s", s, "dir", dir
+        finder = findem(dir, s)
+        finder.on 'end', (files) ->
+            files = (f for f in files when not f.match ("\.pyc|~|\.git|\.bzr$"))
+            files.sort (a, b) ->
+                al = a.length
+                bl = b.length
+                #al -= 20 if a in recent_files
+                #bl -= 20 if b in recent_files
+                return al - bl
+            files = files[0..30]
+            print files
+            socket.emit "suggest-push", 
+                files: files.reverse()
 
     socket.on 'disconnect', ->
         print iden, ":", "disconnected"  
