@@ -26,12 +26,12 @@
     margin: 0px;
     font-family: Courier, monospace;
     font-size: 13px;
-    font-weight:bold;
+    font-weight: normal;
 }
 
 body {
     overflow: hidden;
-    background-color: black;
+ b   background-color: black;
     color: white;
 }
 

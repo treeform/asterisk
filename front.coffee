@@ -130,7 +130,6 @@ class Tokenizer
         ext = filename.match("\.([^\.]*)$").pop()
         for name, spec of specs
             for t in spec.FILE_TYPES
-                print "gess", name, ext, t
                 if ext == t
                     @spec = spec
                     return
@@ -210,8 +209,7 @@ class Connection
         @socket = io.connect("ws://#{host}:8080")
         @socket.on 'connected', (data) ->
             console.log("connected with", data.iden)
-            #@socket.emit('my other event', { my: 'data' })
-        
+          
         @socket.on 'open-push', (res) -> editor.open_cmd.open_push(res)
         @socket.on 'suggest-push', (res) -> editor.open_cmd.open_suggest_push(res)
         
@@ -255,9 +253,7 @@ class OpenFile
         @$input.keyup @keyup
 
     keyup: (e) =>
-        print @$input.val()
         key = keybord_key(e)
-        print key
         if key == "enter"
             @enter()
         else if key == "up" or key == "down"

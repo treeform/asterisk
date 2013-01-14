@@ -1,4 +1,4 @@
-# (*) Asterisk
+# (*) Asterisk 
 
 Asterisk is a Web-based minimistic code editor written in CoffeeScript running on node.js with webSockets.
 
@@ -7,11 +7,11 @@ I put this out there in hopes that you find it usefull, and maybe contribute.
 
 ## Selling points
 
-* *small and simple* you can mold it to your liking 
+* *small and simple* you can mold it to your liking.
 * *minimalism philosophy* no tabs, bars, panels just code.
-* *web-based* host dev tools on one server access from anywhere
-* *webSockets* real time and responsive
-* MIT license
+* *web-based* host dev tools on one server access from anywhere.
+* *webSockets* real time and responsive.
+* MIT license.
 
 ## Why webbased?
 
@@ -34,14 +34,47 @@ Asterisk devieds into two main parts: the server part asterisk.coffee and client
 
 ### Client side.
 
-On the client side you 5 major sections:
-
-* the tokenizer
-* the editor 
+* tokenizer
+* editor 
+* webcoket connection
 * command bars (find, replace, open, other commands)
 * key input system 
 
+#### Tokenizer
 
+Simplest syntax highligher there is. Modeld after the Crimpson editor. 
+Basic premis is that it needs to be fast and simple. 
+Fast because not all devices have CPU cycles to spare and I wnat no delay in rednering.
+Simple in order to capture as many langauges as possible easly.
+It does not try to parse the langauge grammer entirly it only tries to:
+
+* highlight key words
+* highlight strings
+* highlight comments
+
+Thats it. The highlight spesification are very simple. 
+
+This is big contrast to CodeMirror - great highlighter that tries to do everything.
+
+#### Editor
+
+Editor it self is just a text area. This text area is hidden and a ghost div is put in place.
+This ghost div has all the highliting tags. 
+The js keeps the textarea and the ghost div in sync so that any commands done to the textarea (copy, past, undo, and selections) applies exaclty to the ghost div too.
+There is another ghost like div that is the carret and the selection.
+
+#### Websoket connection
+
+Handles all the routing and commands to and from the server. Most operation are asyncronos. 
+When you tell the editor to open a file it asks the server to open a file. 
+Then server responds with an open-push command or open-error command.
+
+
+### Server side
+
+* static file server
+* websoket server
+* plugins
 
 
 
@@ -53,4 +86,4 @@ On the client side you 5 major sections:
 
 Does not work in IE because the work arounds would make it too complex.
 
-
+- treeform

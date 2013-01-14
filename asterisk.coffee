@@ -17,15 +17,21 @@ child_process = require('child_process')
 fs = require('fs')
 http = require('http');
 
+mimeTypes = {
+    "html": "text/html",
+    "png": "image/png",
+    "js": "text/javascript",
+    "css": "text/css"};
+
 server = http.createServer (req, res) ->
     try    
-        buffer = fs.readFileSync(req.url[1..])    
-        #res.headers[] = 
-        #res.writeHeader({'Content-type': 'application/javascript'})
-        #print res.writeHeader
+        filename = "static/" + req.url[1..]
+        buffer = fs.readFileSync(filename)
+        mimeType = mimeTypes[path.extname(filename).split(".").pop()]
+        res.writeHead(200, {'Content-Type': mimeType} )
         res.end(buffer)
     catch e
-        buffer = fs.readFileSync("asterisk.html")
+        buffer = fs.readFileSync("static/asterisk.html")
         res.end(buffer)
 
 server.listen(1988)
