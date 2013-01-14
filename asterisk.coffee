@@ -18,17 +18,16 @@ fs = require('fs')
 http = require('http');
 
 server = http.createServer (req, res) ->
-    if req.url.length == 0 or req.url[0] != "/"
-        return
-    if req.url == "/"
-        req.url = "/asterisk.html"
     try    
         buffer = fs.readFileSync(req.url[1..])    
+        #res.headers[] = 
+        #res.writeHeader({'Content-type': 'application/javascript'})
+        #print res.writeHeader
         res.end(buffer)
     catch e
-        response.writeHead(404, {"Content-Type": "text/plain"})
-        response.write("404 Not Found\n")
-        response.end()
+        buffer = fs.readFileSync("asterisk.html")
+        res.end(buffer)
+
 server.listen(1988)
 
 findem = (dir, s) ->
@@ -49,8 +48,6 @@ findem = (dir, s) ->
     return ev
 
 clients = {}
-
-last_filename = "foo"
 
 class Client
     constructor: (@idne) ->
@@ -75,9 +72,6 @@ io.sockets.on 'connection', (socket) ->
                 message: "filename '#{req.filename}' not found"
                 kind: "ribbon" 
     
-    if last_filename
-        open(filename: last_filename)
-
     socket.on 'keypress', (data) ->
         print iden, ":", "keypress", data
 

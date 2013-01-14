@@ -1,11 +1,16 @@
+# request animation is a function that fires
+# when browser is ready to redraw the screen again
+# fires around 60fps when tab is open
 requestAnimFrame = window.requestAnimationFrame or
         window.webkitRequestAnimationFrame or
         window.mozRequestAnimationFrame or
         window.oRequestAnimationFrame  or
         ((cb) -> window.setTimeout(cb, 1000 / 60))
 
+# nice short cut
 print = (args...) -> console.log(args...)
 
+# keyboard system
 KEY_MAP = 
     9: "tab"
     13: "enter"
@@ -35,9 +40,26 @@ keybord_key = (e) ->
 
 
 specs =
+    # plain spec highlights strings and quotes and thats it
+    plain:
+        NAME: "plain"
+        FILE_TYPES: []
+        CASESEN_SITIVE: true
+        MULTILINE_STR: true
+        DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
+        ESCAPECHAR: "\\"
+        QUOTATION_MARK1: "\""
+        QUOTATION_MARK2: "\'"
+        PAIRS1: "()"
+        PAIRS2: "[]"
+        PAIRS3: "{}"
+        KEY1: []
+        KEY2: []
+        KEY3: []
+    
     python:
         NAME: "python"
-        FILE_TYPES: "py pyw".split()
+        FILE_TYPES: "py pyw".split(" ")
         CASESEN_SITIVE: true
         MULTILINE_STR: true
         DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
@@ -53,11 +75,65 @@ specs =
         KEY2: "class def import from lambda".split(" ")
         KEY3: "except finally raise try".split(" ")
 
+    coffee:
+        NAME: "CoffeeScript"
+        FILE_TYPES: ["coffee"]
+        CASESEN_SITIVE: true
+        MULTILINE_STR: true
+        DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
+        KEYWORD_PREFIX: '&'
+        ESCAPECHAR: "\\"
+        QUOTATION_MARK1: "\""
+        QUOTATION_MARK2: "\'"
+        LINE_COMMENT: "#"
+        PAIRS1: "()"
+        PAIRS2: "[]"
+        PAIRS3: "{}"
+        KEY1: "break continue else for if return while and not or in".split(" ")
+        KEY2: "class -> =>".split(" ")
+        KEY3: "catch finally throw try".split(" ")
+
+    html:
+        NAME: "html"
+        FILE_TYPES: ["html"]
+        CASESEN_SITIVE: true
+        MULTILINE_STR: true
+        DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
+        KEYWORD_PREFIX: '&'
+        ESCAPECHAR: "\\"
+        QUOTATION_MARK1: "\""
+        QUOTATION_MARK2: "\'"
+        LINE_COMMENT: "#"
+        PAIRS1: "()"
+        PAIRS2: "[]"
+        PAIRS3: "{}"
+        KEY1: "html head body div span table title link script textarea input".split(" ")
+        KEY2: "src rel class id value type href alt".split(" ")
+        KEY3: "!DOCTYPE".split(" ")
+
+html_safe = (text) ->
+    text.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/\//g,'&#x2F;');
+
+# its very simple and stupid
 class Tokenizer
 
     constructor: ->
         @token_cache = {}
-        @spec = specs.python
+        @spec = specs.plain
+
+    guess_spec: (filename) ->
+        ext = filename.match("\.([^\.]*)$").pop()
+        for name, spec of specs
+            for t in spec.FILE_TYPES
+                print "gess", name, ext, t
+                if ext == t
+                    @spec = spec
+                    return
 
     tokenize: (@line) ->
         if @token_cache[@line]
@@ -73,8 +149,6 @@ class Tokenizer
         i = 0
         while i < line.length
             c = line[i]
-
-
             if c == spec.QUOTATION_MARK1 or c == spec.QUOTATION_MARK2
                 start = i
                 i += 1
@@ -110,9 +184,8 @@ class Tokenizer
         colored = @colorize_line()
         out = []
         for [cls, words] in colored
-            out.push("<span class='#{cls}'>#{words}</span>")
+            out.push("<span class='#{cls}'>#{html_safe(words)}</span>")
         out.push("\n")
-
         return [colored, out.join("")]
 
     keywords: (c, i, line, colored, spec) ->
@@ -148,7 +221,8 @@ class Connection
         
 esc = ->
     editor.focus()
-    
+
+# goto any line diolog
 class GotoLine
 
     constructor: ->
@@ -171,6 +245,7 @@ class GotoLine
         if line > 0
             editor.goto_line(line)
 
+# open file and the file autocomplete
 class OpenFile
 
     constructor: ->
@@ -213,18 +288,19 @@ class OpenFile
     enter: ->       
         esc()
         filename = @$input.val()
-        print "open", filename
-        editor.con.socket.emit("open", filename:filename)
-    
+        editor.open(filename)
+       
     open_push: (res) ->
-        print "open-push", res.filename
         editor.filename = res.filename
-        $("title").html(res.filename)
+        editor.tokenizer.guess_spec(res.filename)
+        m = res.filename.match("\/([^\/]*)$")
+        title = if m then m.pop() else res.filename
+        $("title").html(title)
+        window.history.pushState({}, "", "/edit/" + res.filename)
         editor.$pad.val(res.data)
         editor.update()
         
     open_suggest_push: (res) ->
-        print res.files
         @$sug.children().remove()
         search = @$input.val()
         for file in res.files
@@ -332,7 +408,6 @@ $("#replace-input").keyup (e) ->
 class MiniMap
 
     constructor: ->
-        print "mini map"
         @$minimap_outer = $("#mini-map")
         @$minimap = $("#mini-map .inner")
         
@@ -344,7 +419,7 @@ class MiniMap
             #top: -700
         
             
-    
+# the main editor class
 class Editor
 
     constructor: ->
@@ -388,7 +463,8 @@ class Editor
             @update()
         @$win.resize(@update)
         @$doc.click(@update)
-
+        @$pad.blur =>
+           @save()
         # keeps all the highlight state
         @lines = []
         @tokenizer = new Tokenizer()
@@ -418,11 +494,17 @@ class Editor
             
           
         @focus()
+
+        if window.location.pathname[0...5] == "/edit"
+            @open(window.location.pathname[6..])
           
         # loop that redoes the work when needed
         @requset_update = true
         @workloop()
     
+    open: (filename) =>
+        @con.socket.emit "open"
+             filename: filename
     save: =>
         @con.socket.emit "save",
             filename: @filename
@@ -437,14 +519,12 @@ class Editor
         start = null
         end = null
         for line, n in @lines
-            print line[1], @old_caret, line[2]
             if not start and line[1] <= @old_caret[0] < line[2]
                 start = n
             if not end and line[1] < @old_caret[1] <= line[2]
                 end = n
         if not end or end < start
             end = start        
-        print [start, end]
         return [start, end]
                 
     tab: =>
@@ -479,8 +559,7 @@ class Editor
     show_promt: (p) ->
         $(p).show()
         $(p+" input").focus()
-        print "load promt", p
-
+        
     update: =>
         @requset_update = true
 
@@ -489,7 +568,6 @@ class Editor
             now = performance.now()
 
         # adjust hight and width of things
-
         @height = @$win.height()
         @width = @$win.width()
         @$holder.height(@height)
@@ -503,15 +581,15 @@ class Editor
         
         set_line = (i, html) =>
             $("#line#{i}").html(html)
-            $("#mm#{i}").html(html) if @minimap
+            #$("#mm#{i}").html(html) if @minimap
             
         add_line = (i, html) =>
             @$ghost.append("<span id='line#{i}'>#{html}</span>")
-            @minimap.$minimap.append("<span id='line#{i}'>#{html}</span>") if @minimap
+            #@minimap.$minimap.append("<span id='line#{i}'>#{html}</span>") if @minimap
 
         rm_line = (i) =>
             $("#line#{i}").remove()
-            $("#mm#{i}").remove() if @minimap
+            #$("#mm#{i}").remove() if @minimap
 
         # high light if it has changed
         if @old_text != text
@@ -550,9 +628,8 @@ class Editor
                             caret_text = text[line[1]..at-1]
                         else
                             caret_text = ""
-                        #print "cur on ", line[0], caret_text
                         top = $("#line"+line[0]).position().top + 100
-                        @$caret_text.html(caret_text)
+                        @$caret_text.html(html_safe(caret_text))
                         @$caret_char.html("&nbsp;")
                         @$caret_line.css("top", top)
             else
@@ -565,20 +642,19 @@ class Editor
                         else
                             caret_text = ""
                         top = $("#line"+line[0]).position().top + 100
-                        @$caret_text.html(caret_text)
+                        @$caret_text.html(html_safe(caret_text))
                         @$caret_line.css("top", top)
-                        @$caret_char.html(text[at..end-1])
+                        @$caret_char.html(html_safe(text[at..end-1]))
 
         @full_height = @$ghost.height()
         @$pad.height(@full_height+100)
         if performance? and performance.now?
             print "update", performance.now()-now, "ms"
     
-        @minimap?.real_update()
-    
+        #@minimap?.real_update()
+        
     goto_line: (line_num) ->
         line = @lines[line_num] ? @lines[@lines.length - 1]
-        print line[1]
         @$pad[0].selectionStart = line[1]
         @$pad[0].selectionEnd = line[1]
         @scroll_line(line[0])
@@ -587,7 +663,6 @@ class Editor
         line = @lines[line_num] ? @lines[@lines.length - 1]
         y = @get_line_y(line[0])
         y -= @$win.height()/2
-        print "scroll to y", y
         @$holder.animate(scrollTop: y)
 
     get_line_y: (line_num) ->
@@ -599,7 +674,6 @@ class Editor
         print "key press", key
         @con.socket.emit("keypress", key)
         if @keymap[key]?
-            print "here"
             @keymap[key]()
             e.stopPropagation()
             return false

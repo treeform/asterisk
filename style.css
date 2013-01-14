@@ -17,7 +17,7 @@
 .variable-2{ color: #ffd500; }
 
 .key1      { color: #fcaf3e; }
-.key2      { color: #fcaf3e; }
+.key2      { color: #ffd500; }
 .key3      { color: #ff9e59; }
 
 
@@ -40,6 +40,7 @@ body {
     height: 100px;
     overflow: auto;
     background-color: #111;
+    padding: 0px 5px;
 }
 
 #caret-line {
