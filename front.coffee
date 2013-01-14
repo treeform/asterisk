@@ -405,6 +405,8 @@ class Editor
         
         @keymap = 
             'esc': @focus
+            'tab': @tab
+            'shift-tab': @untab
             'ctrl-g': @goto_cmd.envoke
             'ctrl-l': @open_cmd.envoke
             'ctrl-s': @save
@@ -430,7 +432,50 @@ class Editor
         $("div.popup").hide()
         @$pad.focus()
         @update()
+        
+    selected_line_range: ->
+        start = null
+        end = null
+        for line, n in @lines
+            print line[1], @old_caret, line[2]
+            if not start and line[1] <= @old_caret[0] < line[2]
+                start = n
+            if not end and line[1] < @old_caret[1] <= line[2]
+                end = n
+        if not end or end < start
+            end = start        
+        print [start, end]
+        return [start, end]
                 
+    tab: =>
+        [start, end] = @selected_line_range()
+        lines = (l[3] for l in @lines)
+        for n in [start..end]
+            lines[n] = "    " + lines[n]
+        text = (l for l in lines).join("\n")
+        @set_text(text)
+        @$pad[0].selectionStart = @lines[start][1]
+        @$pad[0].selectionEnd = @lines[end][2] + 4 * (end-start+1)
+
+    untab: =>
+        [start, end] = @selected_line_range()
+        lines = (l[3] for l in @lines)
+        for n in [start..end]
+            for t in [0..4]
+                if lines[n][0] == " "
+                    lines[n] = lines[n][1..]
+        text = (l for l in lines).join("\n")
+        @set_text(text)
+        @$pad[0].selectionStart = @lines[start][1]
+        full_length = 0
+        for n in [start..end]
+            full_length += lines[n].length
+        @$pad[0].selectionEnd = @$pad[0].selectionStart + full_length
+
+    set_text: (text) ->
+        @$pad.val(text)
+        @update()
+
     show_promt: (p) ->
         $(p).show()
         $(p+" input").focus()
@@ -554,6 +599,7 @@ class Editor
         print "key press", key
         @con.socket.emit("keypress", key)
         if @keymap[key]?
+            print "here"
             @keymap[key]()
             e.stopPropagation()
             return false
