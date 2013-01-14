@@ -49,7 +49,6 @@ specs =
         DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
         ESCAPECHAR: "\\"
         QUOTATION_MARK1: "\""
-        QUOTATION_MARK2: "\'"
         PAIRS1: "()"
         PAIRS2: "[]"
         PAIRS3: "{}"
@@ -127,6 +126,7 @@ class Tokenizer
         @spec = specs.plain
 
     guess_spec: (filename) ->
+        @spec = specs.plain
         ext = filename.match("\.([^\.]*)$").pop()
         for name, spec of specs
             for t in spec.FILE_TYPES
