@@ -91,6 +91,9 @@ io.sockets.on 'connection', (socket) ->
     socket.on 'suggest', (req) ->
         s = req.query
         dir = req.directory
+        if s and s[0] == "/"
+            dir = s[0..s.lastIndexOf("/")-1]
+            s = s[s.lastIndexOf("/")+1..]
         print "s", s, "dir", dir
         finder = findem(dir, s)
         finder.on 'end', (files) ->
