@@ -381,109 +381,9 @@ class SearchBox
 
         editor.$pad[0].selectionStart = at + 1
         editor.$pad[0].selectionEnd = at + query.length + 1
-
         editor.update()
+        editor.scroll_pos(at)
         @$input.focus()
-
-
-###
-
-search = (pad) ->
-    esc()
-    $("#search-box").show()
-    $("#search-input").focus()
-    selected_word = pad.edit.getSelection()
-    if selected_word
-        $("#search-input").val(selected_word)
-
-command = ->
-    $("#command-box").show()
-    $("#command-input").focus()
-
-
-
-$("#command-box").hide()
-$("#command-input").keyup (e) ->
-    editor = current_pad.edit
-    if e.which == ENTER
-        $input = $(e.currentTarget)
-        query = $input.val()
-        if not query
-            return
-        js = CoffeeScript.compile(query)
-        eval(js)
-        esc()
-
-last_pos = null
-last_query = null
-$("#search-box").hide()
-$("#search-input").keyup (e) ->
-    editor = current_pad.edit
-    m.clear() for m in marked
-    marked = []
-
-    $input = $(e.currentTarget)
-    query = $input.val()
-    if not query or query.length == 1
-        return
-    cursor = editor.getSearchCursor(query)
-    while cursor.findNext()
-        t = editor.markText(cursor.from(), cursor.to(), "searched")
-        marked.push(t)
-
-    if e.which == ENTER
-        cur_pos = editor.getCursor()
-        if last_query != query
-            last_pos = null
-
-        if e.shiftKey
-            cursor = editor.getSearchCursor(query, last_pos-1 or cur_pos-1)
-            # backwards
-            if not cursor.findPrevious()
-                # wrap lines
-                cursor = editor.getSearchCursor(query)
-                if not cursor.findPrevious()
-                    return
-        else
-            cursor = editor.getSearchCursor(query, last_pos or cur_pos)
-            # forward
-            if not cursor.findNext()
-                #warp lines
-                cursor = editor.getSearchCursor(query)
-                if not cursor.findNext()
-                    return
-
-        editor.setSelection(cursor.from(), cursor.to())
-        last_query = query
-        last_pos = cursor.to()
-
-$("#replace-input").keyup (e) ->
-    editor = current_pad.edit
-    m.clear() for m in marked
-    marked = []
-    $input = $(e.currentTarget)
-    text = $("#search-input").val()
-    replace = $input.val()
-
-    return if not text
-
-    if false and e.which == ENTER
-        # replace all
-        cursor = editor.getSearchCursor(text)
-        while cursor.findNext()
-            cursor.replace(replace)
-
-    if e.which == ENTER
-        # replace all
-        cursor = editor.getSearchCursor(text, off, false)
-        if e.shiftKey
-            c = cursor.findPrevious()
-        else
-            c = cursor.findNext()
-        if c
-            cursor.replace(replace)
-            editor.setSelection(cursor.from(), cursor.to())
-###
 
 
 class MiniMap
@@ -541,7 +441,7 @@ class Editor
                 return null
             return true
 
-        document.addEventListener("keydown", keydown, false)
+        window.addEventListener("keydown", keydown, false)
 
 
         @$doc.keyup (e) =>
@@ -755,11 +655,19 @@ class Editor
 
         #@minimap?.real_update()
 
+    scroll_pos: (offset) ->
+        line = 0
+        for c in @text[0...offset]
+            if c == "\n"
+                line += 1
+        @scroll_line(line)
+
     goto_line: (line_num) ->
         line = @lines[line_num] ? @lines[@lines.length - 1]
         @$pad[0].selectionStart = line[1]
         @$pad[0].selectionEnd = line[1]
         @scroll_line(line[0])
+
 
     scroll_line: (line_num) ->
         line = @lines[line_num] ? @lines[@lines.length - 1]
