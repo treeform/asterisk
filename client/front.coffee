@@ -96,7 +96,7 @@ specs =
         PAIRS2: "[]"
         PAIRS3: "{}"
         KEY1: "break continue else for if return while and not or in".split(" ")
-        KEY2: "class -> =>".split(" ")
+        KEY2: "class -> => extends new".split(" ")
         KEY3: "catch finally throw try".split(" ")
 
     html:
@@ -224,35 +224,12 @@ class Connection
             print "error-push", error.message
 
 
-esc = ->
+window.esc = ->
     editor.focus()
-
-# goto any line diolog
-class GotoLine
-
-    constructor: ->
-        @$box = $("#goto-box")
-        @$input = $("#goto-input")
-        @$input.keyup (e) =>
-            if keybord_key(e) == "enter"
-                @enter()
-
-    envoke: =>
-        esc()
-        @$box.show()
-        @$input.focus()
-        @$input[0].selectionStart = 0
-        @$input[0].selectionEnd = @$input.val().length
-
-    enter: ->
-        esc()
-        line = parseInt(@$input.val())
-        if line > 0
-            editor.goto_line(line)
-
 
 window.cd = (directory) ->
     editor.open_cmd.directory = directory
+
 
 # command line diolog
 class Command
@@ -277,6 +254,31 @@ class Command
         js = CoffeeScript.compile(command)
         eval(js)
         esc()
+
+
+# goto any line diolog
+class GotoLine
+
+    constructor: ->
+        @$box = $("#goto-box")
+        @$input = $("#goto-input")
+        @$input.keyup (e) =>
+            if keybord_key(e) == "enter"
+                @enter()
+
+    envoke: =>
+        esc()
+        @$box.show()
+        @$input.focus()
+        @$input[0].selectionStart = 0
+        @$input[0].selectionEnd = @$input.val().length
+
+    enter: ->
+        esc()
+        line = parseInt(@$input.val())
+        if line > 0
+            editor.goto_line(line)
+
 
 # open file and the file autocomplete
 class OpenFile
@@ -340,6 +342,49 @@ class OpenFile
         for file in res.files
             file = file.replace(search,"<b>#{search}</b>")
             @$sug.append("<div class='sug'>#{file}<div>")
+
+
+# command line diolog
+class SearchBox
+
+    constructor: ->
+        @$box = $("#search-box")
+        @$input = $("#search-input")
+        @$input.keyup (e) =>
+            if keybord_key(e) == "enter"
+                @enter()
+
+    envoke: =>
+        esc()
+        @$box.show()
+        @$input.focus()
+        @$input[0].selectionStart = 0
+        @$input[0].selectionEnd = @$input.val().length
+
+    enter: ->
+        query = @$input.val()
+        print "find", query
+
+        at = editor.$pad[0].selectionStart
+        end = editor.$pad[0].selectionEnd
+
+        bottom = editor.text[at+1...]
+        pos = bottom.indexOf(query)
+        if pos != -1
+            at = at + pos
+        else
+            pos = editor.text.indexOf(query)
+            if pos != -1
+                at = pos
+            else
+                return
+
+        editor.$pad[0].selectionStart = at + 1
+        editor.$pad[0].selectionEnd = at + query.length + 1
+
+        editor.update()
+        @$input.focus()
+
 
 ###
 
@@ -488,6 +533,7 @@ class Editor
             #print "key press", key
             @con.socket.emit("keypress", key)
             if @keymap[key]?
+                print @keymap[key]
                 @keymap[key]()
                 print "stopping prop", e
                 e.stopPropagation()
@@ -532,7 +578,7 @@ class Editor
         @cmd = new Command()
         @goto_cmd = new GotoLine()
         @open_cmd = new OpenFile()
-
+        @search_cmd = new SearchBox()
 
         @keymap =
             'esc': @focus
@@ -542,7 +588,7 @@ class Editor
             'ctrl-g': @goto_cmd.envoke
             'ctrl-o': @open_cmd.envoke
             'ctrl-s': @save
-
+            'ctrl-f': @search_cmd.envoke
 
             #'alt-g': => @show_promt("#goto")
             #'alt-a': => @show_promt("#command")
@@ -633,7 +679,7 @@ class Editor
         @$highlight.width(@width)
 
         # get the current text
-        text = @$pad.val() or ""
+        @text = text = @$pad.val() or ""
 
         set_line = (i, html) =>
             $("#line#{i}").html(html)
