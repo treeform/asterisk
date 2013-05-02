@@ -4,7 +4,7 @@
 # <- find in files
 # <- open file
 # <- save file
-# -> file changed 
+# -> file changed
 # -> check results
 print = (args...) -> console.log args...
 
@@ -24,16 +24,15 @@ mimeTypes = {
     "css": "text/css"};
 
 server = http.createServer (req, res) ->
-    try    
-        filename = "static/" + req.url[1..]
+    try
+        filename = "client/" + req.url[1..]
         buffer = fs.readFileSync(filename)
         mimeType = mimeTypes[path.extname(filename).split(".").pop()]
         res.writeHead(200, {'Content-Type': mimeType} )
         res.end(buffer)
     catch e
-        buffer = fs.readFileSync("static/asterisk.html")
+        buffer = fs.readFileSync("client/asterisk.html")
         res.end(buffer)
-
 server.listen(1988)
 
 findem = (dir, s) ->
@@ -63,27 +62,27 @@ io.sockets.on 'connection', (socket) ->
     iden = gen_iden()
     clients[iden] = Client(iden)
     socket.emit('connected', {iden: iden})
-    print iden, ":", "connected"  
-    
+    print iden, ":", "connected"
+
     open = (req) ->
         print "open", req.filename
         if fs.existsSync(req.filename)
             file_data = fs.readFileSync(req.filename, 'utf8')
-            socket.emit 'open-push', 
+            socket.emit 'open-push',
                 filename: req.filename
                 data: file_data
             last_filename = req.filename
         else
-            socket.emit 'error-push', 
+            socket.emit 'error-push',
                 message: "filename '#{req.filename}' not found"
-                kind: "ribbon" 
-    
+                kind: "ribbon"
+
     socket.on 'keypress', (data) ->
         print iden, ":", "keypress", data
 
     socket.on 'open', (req) ->
         open(req)
-        
+
     socket.on 'save', (req) ->
         print "save", req.filename
         fs.writeFileSync(req.filename, req.data, 'utf8')
@@ -106,8 +105,9 @@ io.sockets.on 'connection', (socket) ->
                 return al - bl
             files = files[0..30]
             print files
-            socket.emit "suggest-push", 
+            socket.emit "suggest-push",
                 files: files.reverse()
 
     socket.on 'disconnect', ->
-        print iden, ":", "disconnected"  
+        print iden, ":", "disconnected"
+
