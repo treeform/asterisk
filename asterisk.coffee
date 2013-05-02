@@ -1,4 +1,4 @@
-# Asterisk websoket server
+# Asterisk websocket server
 
 # <- find file names
 # <- find in files
@@ -22,6 +22,10 @@ mimeTypes = {
     "png": "image/png",
     "js": "text/javascript",
     "css": "text/css"};
+
+options =
+  key: fs.readFileSync('secure/privatekey.pem'),
+  cert: fs.readFileSync('secure/certificate.pem')
 
 server = http.createServer (req, res) ->
     try

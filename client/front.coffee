@@ -11,7 +11,7 @@ requestAnimFrame = window.requestAnimationFrame or
 print = (args...) -> console.log(args...)
 
 # keyboard system
-KEY_MAP = 
+KEY_MAP =
     9: "tab"
     13: "enter"
     27: "esc"
@@ -23,9 +23,16 @@ KEY_MAP =
 keybord_key = (e) ->
     k = []
     if e.metaKey
-        k.push("meta")
+        if navigator.platform.match("Mac")
+            k.push("ctrl")
+        else
+            k.push("meta")
     if e.ctrlKey
-        k.push("ctrl")
+        if navigator.platform.match("Mac")
+            k.push("meta")
+        else
+            k.push("ctrl")
+
     if e.altKey
         k.push("alt")
     if e.shiftKey
@@ -35,7 +42,7 @@ keybord_key = (e) ->
         k.push(KEY_MAP[e.which])
     else
         k.push(String.fromCharCode(e.which).toLowerCase())
-    
+
     return k.join("-")
 
 
@@ -55,7 +62,7 @@ specs =
         KEY1: []
         KEY2: []
         KEY3: []
-    
+
     python:
         NAME: "python"
         FILE_TYPES: "py pyw".split(" ")
@@ -138,7 +145,7 @@ class Tokenizer
         if @token_cache[@line]
             return @token_cache[@line]
         return @token_cache[line] = @tokenize_line(@line)
-        
+
     colorize_line: ->
         line = @line
         spec = @spec
@@ -176,9 +183,9 @@ class Tokenizer
                 last[1] += c
             old_c = c
             i += 1
-            
-        return colored 
-        
+
+        return colored
+
     tokenize_line: ->
         colored = @colorize_line()
         out = []
@@ -209,14 +216,14 @@ class Connection
         @socket = io.connect("ws://#{host}:8080")
         @socket.on 'connected', (data) ->
             console.log("connected with", data.iden)
-          
+
         @socket.on 'open-push', (res) -> editor.open_cmd.open_push(res)
         @socket.on 'suggest-push', (res) -> editor.open_cmd.open_suggest_push(res)
-        
+
         @socket.on 'error-push', (error) ->
             print "error-push", error.message
-        
-        
+
+
 esc = ->
     editor.focus()
 
@@ -229,19 +236,47 @@ class GotoLine
         @$input.keyup (e) =>
             if keybord_key(e) == "enter"
                 @enter()
-                
+
     envoke: =>
         esc()
         @$box.show()
         @$input.focus()
         @$input[0].selectionStart = 0
         @$input[0].selectionEnd = @$input.val().length
-            
-    enter: ->       
+
+    enter: ->
         esc()
         line = parseInt(@$input.val())
         if line > 0
             editor.goto_line(line)
+
+
+window.cd = (directory) ->
+    editor.open_cmd.directory = directory
+
+# command line diolog
+class Command
+
+    constructor: ->
+        @$box = $("#command-box")
+        @$input = $("#command-input")
+        @$input.keyup (e) =>
+            if keybord_key(e) == "enter"
+                @enter()
+
+    envoke: =>
+        esc()
+        @$box.show()
+        @$input.focus()
+        @$input[0].selectionStart = 0
+        @$input[0].selectionEnd = @$input.val().length
+
+    enter: ->
+        command = @$input.val()
+        print "eval", command
+        js = CoffeeScript.compile(command)
+        eval(js)
+        esc()
 
 # open file and the file autocomplete
 class OpenFile
@@ -251,6 +286,7 @@ class OpenFile
         @$input = $("#open-input")
         @$sug = $("#open-sugest")
         @$input.keyup @keyup
+        @directory = "."
 
     keyup: (e) =>
         key = keybord_key(e)
@@ -272,20 +308,22 @@ class OpenFile
             chosen.addClass("sug-highlight")
             @$input.val(chosen.text())
         else
-            editor.con.socket.emit("suggest", query:@$input.val(), directory:".")
-                
+            editor.con.socket.emit "suggest",
+                query: @$input.val()
+                directory: @directory
+
     envoke: =>
         esc()
         @$box.show()
         @$input.focus()
         @$input[0].selectionStart = 0
         @$input[0].selectionEnd = @$input.val().length
-            
-    enter: ->       
+
+    enter: ->
         esc()
         filename = @$input.val()
         editor.open(filename)
-       
+
     open_push: (res) ->
         editor.filename = res.filename
         editor.tokenizer.guess_spec(res.filename)
@@ -295,13 +333,15 @@ class OpenFile
         window.history.pushState({}, "", "/edit/" + res.filename)
         editor.$pad.val(res.data)
         editor.update()
-        
+
     open_suggest_push: (res) ->
         @$sug.children().remove()
         search = @$input.val()
         for file in res.files
             file = file.replace(search,"<b>#{search}</b>")
             @$sug.append("<div class='sug'>#{file}<div>")
+
+###
 
 search = (pad) ->
     esc()
@@ -314,7 +354,7 @@ search = (pad) ->
 command = ->
     $("#command-box").show()
     $("#command-input").focus()
-    
+
 
 
 $("#command-box").hide()
@@ -398,7 +438,7 @@ $("#replace-input").keyup (e) ->
         if c
             cursor.replace(replace)
             editor.setSelection(cursor.from(), cursor.to())
-
+###
 
 
 class MiniMap
@@ -406,15 +446,16 @@ class MiniMap
     constructor: ->
         @$minimap_outer = $("#mini-map")
         @$minimap = $("#mini-map .inner")
-        
-        
+
+
     real_update: ->
         @$minimap.css
             height: editor.height
             width: 200
             #top: -700
-        
-            
+
+
+
 # the main editor class
 class Editor
 
@@ -422,7 +463,7 @@ class Editor
         window.editor = @
         @con = new Connection()
         @filename = "foo"
-        
+
         # grab common elements
         @$doc = $(document)
         @$win = $(window)
@@ -437,9 +478,26 @@ class Editor
         @$caret_char = $("#caret-char")
 
         # updates
-        @$doc.keydown (e) =>
-            @update()
-            return @key(e)
+        #@$doc.keydown (e) =>
+        #    @update()
+        #    return @key(e)
+
+
+        keydown = (e) =>
+            key = keybord_key(e)
+            #print "key press", key
+            @con.socket.emit("keypress", key)
+            if @keymap[key]?
+                @keymap[key]()
+                print "stopping prop", e
+                e.stopPropagation()
+                e.preventDefault()
+                return null
+            return true
+
+        document.addEventListener("keydown", keydown, false)
+
+
         @$doc.keyup (e) =>
             @update()
             e.preventDefault()
@@ -448,7 +506,7 @@ class Editor
             @update()
             return true
 
-        @$doc.mousedown => 
+        @$doc.mousedown =>
             @mousedown=true
             @update()
         @$doc.mousemove =>
@@ -471,33 +529,35 @@ class Editor
 
         #@minimap = new MiniMap()
 
+        @cmd = new Command()
         @goto_cmd = new GotoLine()
         @open_cmd = new OpenFile()
-        
-        
-        @keymap = 
+
+
+        @keymap =
             'esc': @focus
             'tab': @tab
             'shift-tab': @untab
+            'ctrl-esc': @cmd.envoke
             'ctrl-g': @goto_cmd.envoke
-            'ctrl-l': @open_cmd.envoke
+            'ctrl-o': @open_cmd.envoke
             'ctrl-s': @save
-            
-            
+
+
             #'alt-g': => @show_promt("#goto")
             #'alt-a': => @show_promt("#command")
             #'alt-s': => @show_promt("#search")
-            
-          
+
+
         @focus()
 
         if window.location.pathname[0...5] == "/edit"
             @open(window.location.pathname[6..])
-          
+
         # loop that redoes the work when needed
         @requset_update = true
         @workloop()
-    
+
     open: (filename) =>
         @con.socket.emit "open"
              filename: filename
@@ -510,7 +570,7 @@ class Editor
         $("div.popup").hide()
         @$pad.focus()
         @update()
-        
+
     selected_line_range: ->
         start = null
         end = null
@@ -520,9 +580,9 @@ class Editor
             if not end and line[1] < @old_caret[1] <= line[2]
                 end = n
         if not end or end < start
-            end = start        
+            end = start
         return [start, end]
-                
+
     tab: =>
         [start, end] = @selected_line_range()
         lines = (l[3] for l in @lines)
@@ -555,7 +615,7 @@ class Editor
     show_promt: (p) ->
         $(p).show()
         $(p+" input").focus()
-        
+
     update: =>
         @requset_update = true
 
@@ -573,12 +633,12 @@ class Editor
         @$highlight.width(@width)
 
         # get the current text
-        text = @$pad.val()
-        
+        text = @$pad.val() or ""
+
         set_line = (i, html) =>
             $("#line#{i}").html(html)
             #$("#mm#{i}").html(html) if @minimap
-            
+
         add_line = (i, html) =>
             @$ghost.append("<span id='line#{i}'>#{html}</span>")
             #@minimap.$minimap.append("<span id='line#{i}'>#{html}</span>") if @minimap
@@ -610,8 +670,8 @@ class Editor
             while lines.length < @lines.length
                 l = @lines.pop()
                 rm_line(l[0])
-    
-        # update caret if it has changed caret 
+
+        # update caret if it has changed caret
         at = @$pad[0].selectionStart
         end = @$pad[0].selectionEnd
 
@@ -646,9 +706,9 @@ class Editor
         @$pad.height(@full_height+100)
         if performance? and performance.now?
             print "update", performance.now()-now, "ms"
-    
+
         #@minimap?.real_update()
-        
+
     goto_line: (line_num) ->
         line = @lines[line_num] ? @lines[@lines.length - 1]
         @$pad[0].selectionStart = line[1]
@@ -665,16 +725,6 @@ class Editor
         top = $("#line"+line_num).position().top + 100
         return top
 
-    key: (e) ->
-        key = keybord_key(e)
-        print "key press", key
-        @con.socket.emit("keypress", key)
-        if @keymap[key]?
-            @keymap[key]()
-            e.stopPropagation()
-            return false
-        return true
-
     workloop: =>
         if @requset_update
             @real_update()
@@ -682,5 +732,5 @@ class Editor
         requestAnimFrame(@workloop)
 
 $ ->
-    new Editor()
+    window.editor = new Editor()
 

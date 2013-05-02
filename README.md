@@ -77,8 +77,16 @@ Then server responds with an open-push command or open-error command.
 * plugins
 
 
+### To generate secure folder do this:
 
+mkdir secure
+cd secure
+openssl genrsa -out privatekey.pem 1024 
+openssl req -new -key privatekey.pem -out certrequest.csr 
 
+after entering your info
+
+openssl x509 -req -in certrequest.csr -signkey privatekey.pem -out certificate.pem
 
 
 
