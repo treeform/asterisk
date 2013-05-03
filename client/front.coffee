@@ -409,6 +409,8 @@ class Editor
         @con = new Connection()
         @filename = "foo"
 
+        @tabwidth = 4
+
         # grab common elements
         @$doc = $(document)
         @$win = $(window)
@@ -429,6 +431,7 @@ class Editor
 
 
         keydown = (e) =>
+            @update()
             key = keybord_key(e)
             #print "key press", key
             @con.socket.emit("keypress", key)
@@ -508,9 +511,15 @@ class Editor
         @con.socket.emit "open"
              filename: filename
     save: =>
+        text = @$pad.val()
+        # strip trailing white space onlines
+        tabsize = 4
+        space = (" " for _ in [0...tabsize]).join("")
+        text = text.replace(/\t/g, space)
+        text = text.replace(/[ \r]*\n/g,"\n").replace(/\s*$/g, "\n")
         @con.socket.emit "save",
             filename: @filename
-            data: @$pad.val()
+            data: text
 
     focus: =>
         $("div.popup").hide()
@@ -652,6 +661,8 @@ class Editor
         @$pad.height(@full_height+100)
         if performance? and performance.now?
             print "update", performance.now()-now, "ms"
+        else
+            print "update"
 
         #@minimap?.real_update()
 
