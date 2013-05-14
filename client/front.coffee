@@ -12,9 +12,11 @@ print = (args...) -> console.log(args...)
 
 # keyboard system
 KEY_MAP =
+    8: "backspace"
     9: "tab"
     13: "enter"
     27: "esc"
+    32: "space"
     37: "left"
     38: "up"
     39: "right"
@@ -45,6 +47,46 @@ keybord_key = (e) ->
 
     return k.join("-")
 
+common_str = (strs) ->
+    return "" if strs.length == 0
+    return strs[0] if strs.length == 1
+    first = strs[0]
+    common = ""
+    fail = false
+    for c,i in first
+        for str in strs
+            if str[i] != c
+                fail = true
+                break
+        break if fail
+        common += c
+    return common
+
+
+gcd = (a, b) ->
+    while b
+        [a, b] = [b, a % b]
+    return a
+
+guess_indent = (text) ->
+    indents = {}
+    for line in text.split("\n")
+        indent = line.match(/^\s*/)[0].length
+        continue if indent == 0
+        if indent of indents
+            indents[indent] += 1
+        else
+            indents[indent] = 1
+    indents = ([k*1,v] for k,v of indents)
+    indents = indents.sort (a,b) -> b[1] - a[1]
+    indents = (i[0] for i in indents)
+    if indents.length == 1
+        return indents[0]
+    if indents.length == 0
+        return 4
+    indent = gcd(indents[0], indents[1])
+    #print "indents", indents, indent
+    return indent
 
 specs =
     # plain spec highlights strings and quotes and thats it
@@ -400,6 +442,30 @@ class MiniMap
             #top: -700
 
 
+class UndoStack
+
+    constructor: ->
+        @undos = []
+        @redos = []
+
+    undo: =>
+        if @undos.length > 1
+            text = @undos.pop()
+            @redos.push(editor.get_text_state())
+            editor.set_text_state(text)
+
+    redo: =>
+        if @redos.length > 1
+            text = @redos.pop()
+            @undos.push(editor.get_text_state())
+            editor.set_text_state(text)
+
+    snapshot: =>
+        text = editor.get_text_state()
+        @redos = []
+        if @undos[@undo.length-1] != text
+            @undos.push(text)
+
 
 # the main editor class
 class Editor
@@ -433,6 +499,11 @@ class Editor
         keydown = (e) =>
             @update()
             key = keybord_key(e)
+
+            print "key", key, e.which
+            if key == "space" or key == "enter" or key == "backspace" or key == "tab"
+                @undo.snapshot()
+
             #print "key press", key
             @con.socket.emit("keypress", key)
             if @keymap[key]?
@@ -466,8 +537,7 @@ class Editor
             @update()
         @$win.resize(@update)
         @$doc.click(@update)
-        @$pad.blur =>
-           @save()
+
         # keeps all the highlight state
         @lines = []
         @tokenizer = new Tokenizer()
@@ -482,16 +552,22 @@ class Editor
         @goto_cmd = new GotoLine()
         @open_cmd = new OpenFile()
         @search_cmd = new SearchBox()
+        @undo = new UndoStack()
 
         @keymap =
             'esc': @focus
             'tab': @tab
-            'shift-tab': @untab
+            'shift-tab': @deindent
             'ctrl-esc': @cmd.envoke
             'ctrl-g': @goto_cmd.envoke
             'ctrl-o': @open_cmd.envoke
+            'ctrl-l': @open_cmd.envoke
             'ctrl-s': @save
             'ctrl-f': @search_cmd.envoke
+
+            'ctrl-z': @undo.undo
+            'ctrl-shift-z': @undo.redo
+
 
             #'alt-g': => @show_promt("#goto")
             #'alt-a': => @show_promt("#command")
@@ -512,10 +588,10 @@ class Editor
              filename: filename
     save: =>
         text = @$pad.val()
-        # strip trailing white space onlines
-        tabsize = 4
-        space = (" " for _ in [0...tabsize]).join("")
+        # replace tabs by spaces
+        space = (" " for _ in [0...@tabwidth]).join("")
         text = text.replace(/\t/g, space)
+        # strip trailing white space onlines
         text = text.replace(/[ \r]*\n/g,"\n").replace(/\s*$/g, "\n")
         @con.socket.emit "save",
             filename: @filename
@@ -539,20 +615,59 @@ class Editor
         return [start, end]
 
     tab: =>
+        start = @$pad[0].selectionStart
+        end = @$pad[0].selectionEnd
+        if start == end
+            next = @$pad.val()[start+1]
+            if next == undefined or next.match(/\W/)
+                @autocomplete()
+                return
+        @indent()
+
+    autocomplete: =>
+        start = @$pad[0].selectionStart
+        end = @$pad[0].selectionEnd
+        text = @$pad.val()
+        string = text.substr(0, start)
+        string = string.match(/\w+$/)
+        if string
+            options = {}
+            words = text.split(/\W+/).sort()
+            if words
+                for word in words
+                    word_match = word.match("^" + string + "(.+)")
+                    if word_match and word_match[1] != ""
+                        options[word_match[1]] = true
+                add = common_str(k for k of options)
+                if add.length > 0
+                    @$pad.val(text[..start] + add + text[end..])
+                    @$pad[0].selectionStart += add.length
+                    @$pad[0].selectionEnd += add.length
+
+    indent: =>
         [start, end] = @selected_line_range()
+        if start == end
+           real = @$pad[0].selectionStart
+           just_tab = true
+
         lines = (l[3] for l in @lines)
         for n in [start..end]
             lines[n] = "    " + lines[n]
         text = (l for l in lines).join("\n")
         @set_text(text)
-        @$pad[0].selectionStart = @lines[start][1]
-        @$pad[0].selectionEnd = @lines[end][2] + 4 * (end-start+1)
 
-    untab: =>
+        if just_tab
+            @$pad[0].selectionStart = real + 4
+            @$pad[0].selectionEnd = @$pad[0].selectionStart
+        else
+            @$pad[0].selectionStart = @lines[start][1]
+            @$pad[0].selectionEnd = @lines[end][2] + 4 * (end-start+1)
+
+    deindent: =>
         [start, end] = @selected_line_range()
         lines = (l[3] for l in @lines)
         for n in [start..end]
-            for t in [0..4]
+            for t in [0...4]
                 if lines[n][0] == " "
                     lines[n] = lines[n][1..]
         text = (l for l in lines).join("\n")
@@ -566,6 +681,22 @@ class Editor
     set_text: (text) ->
         @$pad.val(text)
         @update()
+
+    get_text: () ->
+        return @$pad.val()
+
+    set_text_state: (text_state) ->
+        @$pad.val(text_state[0])
+        @$pad[0].selectionEnd = text_state[1][0]
+        @$pad[0].selectionStart = text_state[1][1]
+        @update()
+
+    get_text_state: () ->
+        text_state = [
+            @$pad.val()
+            [@$pad[0].selectionEnd, @$pad[0].selectionStart]
+        ]
+        return text_state
 
     show_promt: (p) ->
         $(p).show()
