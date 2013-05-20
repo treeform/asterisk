@@ -405,7 +405,6 @@ class SearchBox
 
     enter: ->
         query = @$input.val()
-        print "find", query
 
         at = editor.$pad[0].selectionStart
         end = editor.$pad[0].selectionEnd
@@ -500,7 +499,6 @@ class Editor
             @update()
             key = keybord_key(e)
 
-            print "key", key, e.which
             if key == "space" or key == "enter" or key == "backspace" or key == "tab"
                 @undo.snapshot()
 
@@ -509,7 +507,6 @@ class Editor
             if @keymap[key]?
                 print @keymap[key]
                 @keymap[key]()
-                print "stopping prop", e
                 e.stopPropagation()
                 e.preventDefault()
                 return null
@@ -615,7 +612,6 @@ class Editor
         return [start, end]
 
     tab: =>
-        print "tab"
         if @autocomplete()
             return
         @indent()
@@ -648,7 +644,6 @@ class Editor
         text = text[..start-1] + add + text[end..]
         start += add.length
         end += add.length
-        print [text, [start, end], s]
         @set_text_state([text, [start, end], s])
 
     indent: =>
@@ -689,9 +684,6 @@ class Editor
         new_length = 0
         for n in [start..end]
             new_length += lines[n].length + 1
-
-        print "o/n", old_length, new_length
-
         if just_tab
             if real - @tab_width > @lines[start][1]
                 @$pad[0].selectionStart = real - @tab_width
@@ -700,10 +692,7 @@ class Editor
             @$pad[0].selectionEnd = @$pad[0].selectionStart
         else
             @$pad[0].selectionStart = @lines[start][1]
-
             @$pad[0].selectionEnd = @$pad[0].selectionStart + new_length
-
-
 
     set_text: (text) ->
         @$pad.val(text)
@@ -716,14 +705,17 @@ class Editor
         @$pad.val(text_state[0])
         @$pad[0].selectionEnd = text_state[1][0]
         @$pad[0].selectionStart = text_state[1][1]
+        print "set scrollTop", text_state[2]
+        @$holder.animate(scrollTop: text_state[2])
         @update()
 
     get_text_state: () ->
         text_state = [
             @$pad.val(),
             [@$pad[0].selectionEnd, @$pad[0].selectionStart],
-            scroll
+            @$holder.scrollTop(),
         ]
+        print "get scrollTop", @$holder.scrollTop()
         return text_state
 
     show_promt: (p) ->
@@ -819,9 +811,9 @@ class Editor
         @full_height = @$ghost.height()
         @$pad.height(@full_height+100)
         if performance? and performance.now?
-            print "update", performance.now()-now, "ms"
+            print "        update", performance.now()-now, "ms"
         else
-            print "update"
+            print "        update"
 
         #@minimap?.real_update()
 
