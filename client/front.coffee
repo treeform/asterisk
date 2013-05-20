@@ -391,40 +391,73 @@ class SearchBox
 
     constructor: ->
         @$box = $("#search-box")
-        @$input = $("#search-input")
-        @$input.keyup (e) =>
+        @$search = $("#search-input")
+        @$search.keyup (e) =>
             if keybord_key(e) == "enter"
-                @enter()
+                @search()
+            else if keybord_key(e) == "down"
+                @search()
+            else if keybord_key(e) == "up"
+                @search(false)
+            @$search.focus()
+
+        @$replace = $("#replace-input")
+        @$replace.keyup (e) =>
+            if keybord_key(e) == "enter"
+                @replace()
+                @search()
+            else if keybord_key(e) == "down"
+                @search()
+            else if keybord_key(e) == "up"
+                @search(false)
+            @$replace.focus()
 
     envoke: =>
         esc()
         @$box.show()
-        @$input.focus()
-        @$input[0].selectionStart = 0
-        @$input[0].selectionEnd = @$input.val().length
+        @$search.focus()
+        @$search[0].selectionStart = 0
+        @$search[0].selectionEnd = @$search.val().length
 
-    enter: ->
-        query = @$input.val()
-
-        at = editor.$pad[0].selectionStart
-        end = editor.$pad[0].selectionEnd
-
-        bottom = editor.text[at+1...]
-        pos = bottom.indexOf(query)
-        if pos != -1
-            at = at + pos
+    search: (down=true)->
+        query = @$search.val()
+        [text, [at, end], scroll] = editor.get_text_state()
+        if down
+            bottom = text[at+1...]
+            pos = bottom.indexOf(query)
+            if pos != -1
+                at = at + pos + 1
+            else
+                pos = text.indexOf(query)
+                if pos != -1
+                    at = pos
+                else
+                    return
         else
-            pos = editor.text.indexOf(query)
+            top = text[...at]
+            pos = top.lastIndexOf(query)
             if pos != -1
                 at = pos
             else
-                return
+                pos = text.lastIndexOf(query)
+                if pos != -1
+                    at = pos
+                else
+                    return
 
-        editor.$pad[0].selectionStart = at + 1
-        editor.$pad[0].selectionEnd = at + query.length + 1
+        editor.$pad[0].selectionStart = at
+        editor.$pad[0].selectionEnd = at + query.length
         editor.update()
         editor.scroll_pos(at)
-        @$input.focus()
+
+    replace: ->
+        [text, [start, end], scroll] = editor.get_text_state()
+        query = @$search.val()
+        print "[", text.length, "]", start, end, text[start...end], "==", query
+        if text[start...end] == query
+            replace = @$replace.val()
+            text = text[...start] + replace + text[end...]
+            editor.set_text_state([text, [start, start + replace.length], scroll])
 
 
 class MiniMap
@@ -505,7 +538,6 @@ class Editor
             #print "key press", key
             @con.socket.emit("keypress", key)
             if @keymap[key]?
-                print @keymap[key]
                 @keymap[key]()
                 e.stopPropagation()
                 e.preventDefault()
@@ -612,9 +644,20 @@ class Editor
         return [start, end]
 
     tab: =>
+        if $("#search-input").is(":focus")
+            print "focus replace"
+            $("#replace-input").focus()
+            return
+        if $("#replace-input").is(":focus")
+            print "focus search"
+            $("#search-input").focus()
+            return
+        if not @$pad.is(":focus")
+            return
         if @autocomplete()
             return
         @indent()
+        return
 
     autocomplete: =>
         [text, [start, end], s] = @get_text_state()
@@ -710,9 +753,13 @@ class Editor
         @update()
 
     get_text_state: () ->
+        start = @$pad[0].selectionStart
+        end = @$pad[0].selectionEnd
+        if start > end
+            [start, end] = [end, start]
         text_state = [
             @$pad.val(),
-            [@$pad[0].selectionEnd, @$pad[0].selectionStart],
+            [start, end],
             @$holder.scrollTop(),
         ]
         print "get scrollTop", @$holder.scrollTop()
