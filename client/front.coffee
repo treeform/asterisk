@@ -475,7 +475,7 @@ class Editor
         @con = new Connection()
         @filename = "foo"
 
-        @tabwidth = 4
+        @tab_width = 4
 
         # grab common elements
         @$doc = $(document)
@@ -589,7 +589,7 @@ class Editor
     save: =>
         text = @$pad.val()
         # replace tabs by spaces
-        space = (" " for _ in [0...@tabwidth]).join("")
+        space = (" " for _ in [0...@tab_width]).join("")
         text = text.replace(/\t/g, space)
         # strip trailing white space onlines
         text = text.replace(/[ \r]*\n/g,"\n").replace(/\s*$/g, "\n")
@@ -622,11 +622,14 @@ class Editor
 
     autocomplete: =>
         [text, [start, end], s] = @get_text_state()
+        # if some thing is selected don't auto complete
+        if start != end
+            return false
         string = text.substr(0, start)
         at = text[start]
         string = string.match(/\w+$/)
-        print "ac", at, string
-        if (not at or at.match("\s")) and string
+        # only when at char is splace and there is a string under curser
+        if (not at or at.match(/\s/)) and string
             options = {}
             words = text.split(/\W+/).sort()
             if words
@@ -641,9 +644,8 @@ class Editor
         return false
 
     insert_text: (add) =>
-        print "insert", add
         [text, [start, end], s] = @get_text_state()
-        text = text[..start] + add + text[end..]
+        text = text[..start-1] + add + text[end..]
         start += add.length
         end += add.length
         print [text, [start, end], s]
@@ -662,26 +664,46 @@ class Editor
         @set_text(text)
 
         if just_tab
-            @$pad[0].selectionStart = real + 4
+            @$pad[0].selectionStart = real + @tab_width
             @$pad[0].selectionEnd = @$pad[0].selectionStart
         else
             @$pad[0].selectionStart = @lines[start][1]
-            @$pad[0].selectionEnd = @lines[end][2] + 4 * (end-start+1)
+            @$pad[0].selectionEnd = @lines[end][2] + @tab_width * (end-start+1)
 
     deindent: =>
         [start, end] = @selected_line_range()
+        if start == end
+           real = @$pad[0].selectionStart
+           just_tab = true
+
         lines = (l[3] for l in @lines)
+        old_length = 0
         for n in [start..end]
-            for t in [0...4]
+            old_length += lines[n].length + 1
+            for t in [0...@tab_width]
                 if lines[n][0] == " "
                     lines[n] = lines[n][1..]
         text = (l for l in lines).join("\n")
         @set_text(text)
-        @$pad[0].selectionStart = @lines[start][1]
-        full_length = 0
+
+        new_length = 0
         for n in [start..end]
-            full_length += lines[n].length
-        @$pad[0].selectionEnd = @$pad[0].selectionStart + full_length
+            new_length += lines[n].length + 1
+
+        print "o/n", old_length, new_length
+
+        if just_tab
+            if real - @tab_width > @lines[start][1]
+                @$pad[0].selectionStart = real - @tab_width
+            else
+                @$pad[0].selectionStart = @lines[start][1]
+            @$pad[0].selectionEnd = @$pad[0].selectionStart
+        else
+            @$pad[0].selectionStart = @lines[start][1]
+
+            @$pad[0].selectionEnd = @$pad[0].selectionStart + new_length
+
+
 
     set_text: (text) ->
         @$pad.val(text)
