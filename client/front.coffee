@@ -119,7 +119,7 @@ specs =
         PAIRS1: "()"
         PAIRS2: "[]"
         PAIRS3: "{}"
-        KEY1: "break continue elif else for if pass return while and not or in".split(" ")
+        KEY1: "break continue elif else for if pass return while and not or in del".split(" ")
         KEY2: "class def import from lambda".split(" ")
         KEY3: "except finally raise try".split(" ")
 
@@ -584,7 +584,7 @@ class Editor
         @workloop()
 
     open: (filename) =>
-        @con.socket.emit "open"
+        @con.socket.emit "open",
              filename: filename
     save: =>
         text = @$pad.val()
@@ -615,22 +615,18 @@ class Editor
         return [start, end]
 
     tab: =>
-        start = @$pad[0].selectionStart
-        end = @$pad[0].selectionEnd
-        if start == end
-            next = @$pad.val()[start+1]
-            if next == undefined or next.match(/\W/)
-                @autocomplete()
-                return
+        print "tab"
+        if @autocomplete()
+            return
         @indent()
 
     autocomplete: =>
-        start = @$pad[0].selectionStart
-        end = @$pad[0].selectionEnd
-        text = @$pad.val()
+        [text, [start, end], s] = @get_text_state()
         string = text.substr(0, start)
+        at = text[start]
         string = string.match(/\w+$/)
-        if string
+        print "ac", at, string
+        if (not at or at.match("\s")) and string
             options = {}
             words = text.split(/\W+/).sort()
             if words
@@ -640,9 +636,18 @@ class Editor
                         options[word_match[1]] = true
                 add = common_str(k for k of options)
                 if add.length > 0
-                    @$pad.val(text[..start] + add + text[end..])
-                    @$pad[0].selectionStart += add.length
-                    @$pad[0].selectionEnd += add.length
+                    @insert_text(add)
+            return true
+        return false
+
+    insert_text: (add) =>
+        print "insert", add
+        [text, [start, end], s] = @get_text_state()
+        text = text[..start] + add + text[end..]
+        start += add.length
+        end += add.length
+        print [text, [start, end], s]
+        @set_text_state([text, [start, end], s])
 
     indent: =>
         [start, end] = @selected_line_range()
@@ -693,8 +698,9 @@ class Editor
 
     get_text_state: () ->
         text_state = [
-            @$pad.val()
-            [@$pad[0].selectionEnd, @$pad[0].selectionStart]
+            @$pad.val(),
+            [@$pad[0].selectionEnd, @$pad[0].selectionStart],
+            scroll
         ]
         return text_state
 
@@ -829,4 +835,3 @@ class Editor
 
 $ ->
     window.editor = new Editor()
-

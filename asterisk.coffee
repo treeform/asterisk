@@ -23,19 +23,23 @@ mimeTypes = {
     "js": "text/javascript",
     "css": "text/css"};
 
-options =
-  key: fs.readFileSync('secure/privatekey.pem'),
-  cert: fs.readFileSync('secure/certificate.pem')
+#options =
+#  key: fs.readFileSync('secure/privatekey.pem'),
+#  cert: fs.readFileSync('secure/certificate.pem')
 
 server = http.createServer (req, res) ->
     try
-        filename = "client/" + req.url[1..]
+        print("client/"+req.url[1..])
+        filename = "client/" + req.url[1..].split("?")[0]
         buffer = fs.readFileSync(filename)
-        mimeType = mimeTypes[path.extname(filename).split(".").pop()]
-        res.writeHead(200, {'Content-Type': mimeType} )
+        print "buffer", buffer.length
+        #mimeType = mimeTypes[path.extname(filename).split(".").pop()]
+        #res.writeHead(200, {'Content-Type': mimeType} )
         res.end(buffer)
     catch e
+        print e
         buffer = fs.readFileSync("client/asterisk.html")
+        buffer = buffer.toString().replace("$rand", gen_iden())
         res.end(buffer)
 server.listen(1988)
 
