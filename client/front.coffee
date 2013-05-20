@@ -264,9 +264,11 @@ class Connection
 
         @socket.on 'error-push', (error) ->
             print "error-push", error.message
-
+            editor.$errorbox.show()
+            editor.$errorbox.html(error.message)
 
 window.esc = ->
+    editor.$errorbox.hide()
     editor.focus()
 
 window.cd = (directory) ->
@@ -516,6 +518,8 @@ class Editor
         @$pad = $(".pad")
         @$ghost = $(".ghost")
         @$highlight = $(".highlight")
+        @$errorbox = $("#error-box")
+        @$errorbox.hide()
 
         # grab careat
         @$caret_line = $("#caret-line")
@@ -584,7 +588,7 @@ class Editor
         @undo = new UndoStack()
 
         @keymap =
-            'esc': @focus
+            'esc': esc
             'tab': @tab
             'shift-tab': @deindent
             'ctrl-esc': @cmd.envoke
@@ -780,7 +784,7 @@ class Editor
         @height = @$win.height()
         @width = @$win.width()
         @$holder.height(@height)
-        @$holder.width(@width)
+        @$holder.width(@width-10) #-10 for scrollbar
         @$pad.width(@width)
         @$ghost.width(@width)
         @$highlight.width(@width)
@@ -896,3 +900,4 @@ class Editor
 
 $ ->
     window.editor = new Editor()
+

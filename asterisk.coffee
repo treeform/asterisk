@@ -82,8 +82,12 @@ io.sockets.on 'connection', (socket) ->
             last_filename = req.filename
         else
             socket.emit 'error-push',
-                message: "filename '#{req.filename}' not found"
+                message: "filename '#{req.filename}' not found, saveing will create new file"
                 kind: "ribbon"
+            # push an empty file up
+            socket.emit 'open-push',
+                filename: req.filename
+                data: ""
 
     socket.on 'keypress', (data) ->
         print iden, ":", "keypress", data
@@ -93,7 +97,12 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'save', (req) ->
         print "save", req.filename
-        fs.writeFileSync(req.filename, req.data, 'utf8')
+        try
+            fs.writeFileSync(req.filename, req.data, 'utf8')
+        catch e
+            socket.emit 'error-push',
+                message: "error #{e} writing '#{req.filename}'"
+                kind: "ribbon"
 
     socket.on 'suggest', (req) ->
         s = req.query
@@ -118,4 +127,3 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'disconnect', ->
         print iden, ":", "disconnected"
-
