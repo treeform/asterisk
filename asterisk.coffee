@@ -17,6 +17,19 @@ child_process = require('child_process')
 fs = require('fs')
 http = require('http');
 
+read_config = ->
+    try
+        text = fs.readFileSync(process.env.HOME + "/.asterisk.json", 'utf8')
+    catch e
+        print "could not read ~/.asterisk.json"
+    try
+        return JSON.parse(text)
+    catch e
+        print "could not parse ~/.asterisk.json"
+    return {'username': 'admin', 'password': '123'}
+
+config = read_config()
+
 mimeTypes = {
     "html": "text/html",
     "png": "image/png",
@@ -76,7 +89,7 @@ io.sockets.on 'connection', (socket) ->
     loggedin = false
 
     socket.on 'auth', (auth) ->
-        if auth.username == "andre" and auth.password == "098zxc"
+        if auth.username == config.username and auth.password == config.password
             socket.emit "loggedin"
             loggedin = true
         else

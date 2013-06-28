@@ -497,7 +497,7 @@ class Auth
         if @$login_username.val()
             @login()
         else
-            @$login_box.show()
+            @show()
 
     login: ->
         username = @$login_username.val()
@@ -508,6 +508,9 @@ class Auth
         editor.con.socket.emit "auth",
             username: username
             password: password
+
+    show: ->
+        @$login_box.show()
 
     loggedin: ->
         @$login_box.hide()
@@ -527,6 +530,8 @@ class Connection
         @socket.on 'suggest-push', (res) -> editor.open_cmd.open_suggest_push(res)
         @socket.on 'loggedin', (res) -> editor.auth.loggedin(res)
         @socket.on 'error-push', (error) ->
+            if error.message == "invalid username or password"
+                editor.auth.show()
             if error.message == "not logged in"
                 editor.auth.login()
             editor.$errorbox.show()
