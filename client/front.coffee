@@ -251,29 +251,6 @@ class Tokenizer
                             return i
         return
 
-class Connection
-
-    constructor: ->
-        host = window.document.location.host.replace(/:.*/, '')
-        @socket = io.connect("ws://#{host}:8080")
-        @socket.on 'connected', (data) ->
-            console.log("connected with", data.iden)
-
-        @socket.on 'open-push', (res) -> editor.open_cmd.open_push(res)
-        @socket.on 'suggest-push', (res) -> editor.open_cmd.open_suggest_push(res)
-
-        @socket.on 'error-push', (error) ->
-            print "error-push", error.message
-            editor.$errorbox.show()
-            editor.$errorbox.html(error.message)
-
-window.esc = ->
-    editor.$errorbox.hide()
-    editor.focus()
-
-window.cd = (directory) ->
-    editor.open_cmd.directory = directory
-
 
 # command line diolog
 class Command
@@ -332,7 +309,7 @@ class OpenFile
         @$input = $("#open-input")
         @$sug = $("#open-sugest")
         @$input.keyup @keyup
-        @directory = "."
+        @directory = localStorage.getItem("directory") or "."
 
     keyup: (e) =>
         key = keybord_key(e)
@@ -501,6 +478,71 @@ class UndoStack
             @undos.push(text)
 
 
+class Auth
+
+    constructor: ->
+
+        @$login_box = $("#login-box")
+        @$login_button = $("#login-button")
+        @$login_username = $("#login-username")
+        @$login_password = $("#login-password")
+
+        @$login_username.val(localStorage.getItem("username"))
+        @$login_password.val(localStorage.getItem("password"))
+
+        @$login_button.click =>
+            @login()
+            return false
+
+        if @$login_username.val()
+            @login()
+        else
+            @$login_box.show()
+
+    login: ->
+        username = @$login_username.val()
+        password = @$login_password.val()
+        localStorage.setItem("username", username)
+        localStorage.setItem("password", password)
+        # send auth info
+        editor.con.socket.emit "auth",
+            username: username
+            password: password
+
+    loggedin: ->
+        @$login_box.hide()
+        if window.location.pathname[0...5] == "/edit"
+            editor.open(window.location.pathname[6..])
+        esc()
+
+class Connection
+
+    constructor: ->
+        host = window.document.location.host.replace(/:.*/, '')
+        @socket = io.connect("ws://#{host}:8080")
+        @socket.on 'connected', (data) ->
+            console.log("connected with", data.iden)
+
+        @socket.on 'open-push', (res) -> editor.open_cmd.open_push(res)
+        @socket.on 'suggest-push', (res) -> editor.open_cmd.open_suggest_push(res)
+        @socket.on 'loggedin', (res) -> editor.auth.loggedin(res)
+        @socket.on 'error-push', (error) ->
+            if error.message == "not logged in"
+                editor.auth.login()
+            editor.$errorbox.show()
+            editor.$errorbox.html(error.message)
+
+
+window.esc = ->
+    editor.$errorbox.hide()
+    editor.focus()
+
+
+window.cd = (directory) ->
+    editor.open_cmd.directory = directory
+    localStorage.setItem("directory", directory)
+
+
 # the main editor class
 class Editor
 
@@ -521,10 +563,13 @@ class Editor
         @$errorbox = $("#error-box")
         @$errorbox.hide()
 
+
         # grab careat
         @$caret_line = $("#caret-line")
         @$caret_text = $("#caret-text")
         @$caret_char = $("#caret-char")
+
+        @auth = new Auth()
 
         # updates
         #@$doc.keydown (e) =>
@@ -608,9 +653,6 @@ class Editor
 
 
         @focus()
-
-        if window.location.pathname[0...5] == "/edit"
-            @open(window.location.pathname[6..])
 
         # loop that redoes the work when needed
         @requset_update = true
@@ -861,10 +903,10 @@ class Editor
 
         @full_height = @$ghost.height()
         @$pad.height(@full_height+100)
-        if performance? and performance.now?
-            print "        update", performance.now()-now, "ms"
-        else
-            print "        update"
+        #if performance? and performance.now?
+        #    print "        update", performance.now()-now, "ms"
+        #else
+        #    print "        update"
 
         #@minimap?.real_update()
 
@@ -900,4 +942,3 @@ class Editor
 
 $ ->
     window.editor = new Editor()
-

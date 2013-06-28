@@ -66,11 +66,28 @@ class Client
     constructor: (@idne) ->
 
 
+
 io.sockets.on 'connection', (socket) ->
     iden = gen_iden()
     clients[iden] = Client(iden)
     socket.emit('connected', {iden: iden})
     print iden, ":", "connected"
+
+    loggedin = false
+
+    socket.on 'auth', (auth) ->
+        if auth.username == "andre" and auth.password == "098zxc"
+            socket.emit "loggedin"
+            loggedin = true
+        else
+            socket.emit 'error-push',
+                message: "invalid username or password"
+                kind: "ribbon"
+
+    error = (msg) ->
+        socket.emit 'error-push',
+            message: msg
+            kind: "ribbon"
 
     open = (req) ->
         print "open", req.filename
@@ -93,9 +110,11 @@ io.sockets.on 'connection', (socket) ->
         print iden, ":", "keypress", data
 
     socket.on 'open', (req) ->
+        return error("not logged in") if not loggedin
         open(req)
 
     socket.on 'save', (req) ->
+        return error("not logged in") if not loggedin
         print "save", req.filename
         try
             fs.writeFileSync(req.filename, req.data, 'utf8')
@@ -105,6 +124,7 @@ io.sockets.on 'connection', (socket) ->
                 kind: "ribbon"
 
     socket.on 'suggest', (req) ->
+        return error("not logged in") if not loggedin
         s = req.query
         dir = req.directory
         if s and s[0] == "/"
@@ -127,3 +147,4 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'disconnect', ->
         print iden, ":", "disconnected"
+
