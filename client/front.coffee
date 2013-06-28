@@ -478,6 +478,11 @@ class UndoStack
             @undos.push(text)
 
 
+window.logout = ->
+    localStorage.setItem("username", "")
+    localStorage.setItem("password", "")
+    location.reload()
+
 class Auth
 
     constructor: ->
