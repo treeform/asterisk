@@ -348,6 +348,7 @@ class OpenFile
         editor.open(filename)
 
     open_push: (res) ->
+        editor.fresh = false
         editor.filename = res.filename
         editor.tokenizer.guess_spec(res.filename)
         m = res.filename.match("\/([^\/]*)$")
@@ -456,6 +457,9 @@ class MiniMap
 class UndoStack
 
     constructor: ->
+        @clear()
+
+    clear: =>
         @undos = []
         @redos = []
 
@@ -519,7 +523,7 @@ class Auth
 
     loggedin: ->
         @$login_box.hide()
-        if window.location.pathname[0...5] == "/edit"
+        if editor.fresh and window.location.pathname[0...5] == "/edit"
             editor.open(window.location.pathname[6..])
         esc()
 
@@ -557,6 +561,7 @@ window.cd = (directory) ->
 class Editor
 
     constructor: ->
+        @fresh = true
         window.editor = @
         @con = new Connection()
         @filename = "foo"
@@ -952,3 +957,4 @@ class Editor
 
 $ ->
     window.editor = new Editor()
+
