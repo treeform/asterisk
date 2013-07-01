@@ -176,11 +176,14 @@ input {
     display: block;
     margin: 10px auto;
 }
+#login-box input {
+    padding: 5px;
+}
 #login-box div {
     display: block;
     margin: 10px auto;
-    width: 250px;
-    text-align: center;
+    width: 280px;
+    text-align: right;
 }
 #login-box button {
     background-color: #500;
@@ -228,3 +231,4 @@ input {
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
+
