@@ -18,7 +18,7 @@
 
 .key1      { color: #fcaf3e; }
 .key2      { color: #ffd500; }
-.key3      { color: #ff9e59; }
+.key3      { color: #ff4c00; }
 
 
 * {
@@ -51,7 +51,7 @@ body {
     background-color: #200;
     white-space: pre-wrap;
 }
-#caret-text {
+#caret-text, #caret-tail {
     color: rgba(0,0,0,0);
 }
 #caret-char {
@@ -62,8 +62,14 @@ body {
 .ghost {
     position: absolute;
     top: 100px;
-   z-index: 1;
+    z-index: 1;
+
+    -webkit-rtl-ordering: logical;
+    -webkit-user-select: text;
+    -webkit-flex-direction: column;
     white-space: pre-wrap;
+    word-wrap: break-word;
+
 }
 
 .highlight {
@@ -93,7 +99,6 @@ body {
 
 }
 
-
 .prompt {
     z-index: 2;
     position: absolute;
@@ -107,8 +112,6 @@ body {
 .prompt input[text] {
     width: 300px;
 }
-
-
 
 input {
     background: #111;
@@ -231,4 +234,3 @@ input {
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
-

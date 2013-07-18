@@ -120,8 +120,22 @@ specs =
         PAIRS2: "[]"
         PAIRS3: "{}"
         KEY1: "break continue elif else for if pass return while and not or in del".split(" ")
-        KEY2: "class def import from lambda".split(" ")
-        KEY3: "except finally raise try".split(" ")
+        KEY2: "class def import from lambda except finally raise try yield".split(" ")
+        KEY3: "abs divmod input open staticmethod
+            all enumerate int ord str
+            any eval isinstance pow sum
+            basestring execfile issubclass print super
+            bin file iter property tuple
+            bool filter len range type
+            bytearray float list raw_input unichr
+            callable format locals reduce unicode
+            chr frozenset long reload vars
+            classmethod getattr map repr xrange cmp
+            globals max reversed zip compile hasattr
+            memoryview round __import__ complex hash
+            min set apply delattr help next setattr
+            buffer dict hex object slice coerce dir
+            id oct sorted intern".match(/[^ \n]+/g)
 
     coffee:
         NAME: "CoffeeScript"
@@ -155,9 +169,38 @@ specs =
         PAIRS1: "()"
         PAIRS2: "[]"
         PAIRS3: "{}"
-        KEY1: "html head body div span table title link script textarea input".split(" ")
-        KEY2: "src rel class id value type href alt".split(" ")
-        KEY3: "!DOCTYPE".split(" ")
+        KEY1: [
+            '!doctype', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'b',
+            'base', 'basefont', 'bdo', 'big', 'blockquote', 'body', 'br', 'button',
+            'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'dd', 'del',
+            'dfn', 'dir', 'div', 'dl', 'dt', 'em', 'fieldset', 'font', 'form',
+            'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'hr',
+            'html', 'i', 'iframe', 'img', 'input', 'ins', 'isindex', 'kbd', 'label',
+            'legend', 'li', 'link', 'map', 'menu', 'meta', 'noframes', 'noscript',
+            'object', 'ol', 'optgroup', 'option', 'p', 'param', 'pre', 'q', 's',
+            'samp', 'script', 'select', 'small', 'span', 'strike', 'strong', 'style',
+            'sub', 'sup', 'table', 'tbody', 'td', 'textarea', 'tfoot', 'th', 'thead',
+            'title', 'tr', 'tt', 'u', 'ul', 'var'
+        ]
+        KEY2: [
+            'code', 'text', 'onreset', 'cols', 'datetime', 'disabled', 'accept-charset',
+            'shape', 'codetype', 'alt', 'nam', 'compact', 'onload', 'style', 'lo',
+            'valuetype', 'version', 'onmousemove', 'ti', 'onsubmit', 'onkeypress',
+            'rules', 'nohref', 'abbr', 'background', 'name', 'h', 'summary', 'noshade',
+            'coords', 't', 'onkeyup', 'dir', 'frame', 'usemap', 'ismap', 'onchange',
+            'hspace', 'vlink', 'for', 'selected', 'rev', 'label', 'content', 'onselect',
+            'rel', 'onfocus', 'charoff', 'alink', 'onkeydown', 'codebase', 'span',
+            'scrolli', 'on', 'language', 'standby', 'declare', 's', 'maxlength', 'action',
+            'tabindex', 'va', 'color', 'colspan', 'accesskey', 'height', 'href', 'nowrap',
+            'size', 'rows', 'checked', 'start', 'metho', 'bgcolor', 'onmouseup', 'scope',
+            'type', 'cite', 'onblur', 'onmouseout', 'src', 'valign', 'link', 'onunload',
+            'target', 'align', 'value', 'n', 'widt', 'headers', 'longdesc', 'classid',
+            'defer', 'prompt', 'accept', 'char', 'border', 'archive', 'axis', 'rowspan',
+            'media', 'charset', 'id', 'readonly', 'onclick', 'cellspacing', 'profile',
+            'multiple', 'object', 'cellpadding', 'marginheight', 'data', 'class',
+            'frameborder', 'enctype', 'lang', 'clear', 'face', 'marginwidth', 'ondblclick',
+            'width', 'onmouseover'
+        ]
 
 html_safe = (text) ->
     text.replace(/&/g, '&amp;')
@@ -231,8 +274,12 @@ class Tokenizer
     tokenize_line: ->
         colored = @colorize_line()
         out = []
+
         for [cls, words] in colored
             out.push("<span class='#{cls}'>#{html_safe(words)}</span>")
+            #for c in words
+            #    out.push("<span class='#{cls}'>#{html_safe(w)}</span>")
+        #out.push(@line)
         out.push("\n")
         return [colored, out.join("")]
 
@@ -583,6 +630,7 @@ class Editor
         @$caret_line = $("#caret-line")
         @$caret_text = $("#caret-text")
         @$caret_char = $("#caret-char")
+        @$caret_tail = $("#caret-tail")
 
         @auth = new Auth()
 
@@ -902,6 +950,9 @@ class Editor
                         @$caret_text.html(html_safe(caret_text))
                         @$caret_char.html("&nbsp;")
                         @$caret_line.css("top", top)
+
+                        @$caret_tail.html(html_safe(text[at+1...text.indexOf("\n", at)]))
+
             else
                 if at > end
                     [at, end] = [end, at]
@@ -913,8 +964,10 @@ class Editor
                             caret_text = ""
                         top = $("#line"+line[0]).position().top + 100
                         @$caret_text.html(html_safe(caret_text))
+                        print caret_text
                         @$caret_line.css("top", top)
                         @$caret_char.html(html_safe(text[at..end-1]))
+                        @$caret_tail.html(html_safe(text[end..text.indexOf("\n", end)]))
 
         @full_height = @$ghost.height()
         @$pad.height(@full_height+100)
@@ -957,4 +1010,3 @@ class Editor
 
 $ ->
     window.editor = new Editor()
-
