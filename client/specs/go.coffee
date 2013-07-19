@@ -25,4 +25,7 @@ window.specs.css =
         "complex128", "byte", "rune"
     ]
     KEY3: [
+        "true", "false", "iota", "nil",
+        "append", "cap", "close", "complex", "copy", "delete", "imag", "len",
+        "make", "new", "panic", "print", "println", "real", "recover"
     ]
