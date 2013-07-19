@@ -398,20 +398,6 @@ class SearchBox
             editor.set_text_state([text, [start, start + replace.length], scroll])
 
 
-class MiniMap
-
-    constructor: ->
-        @$minimap_outer = $("#mini-map")
-        @$minimap = $("#mini-map .inner")
-
-
-    real_update: ->
-        @$minimap.css
-            height: editor.height
-            width: 200
-            #top: -700
-
-
 class UndoStack
 
     constructor: ->
@@ -595,8 +581,6 @@ class Editor
         @old_text = ""
         @old_caret = [0,0]
 
-        #@minimap = new MiniMap()
-
         @cmd = new Command()
         @goto_cmd = new GotoLine()
         @open_cmd = new OpenFile()
@@ -613,15 +597,8 @@ class Editor
             'ctrl-l': @open_cmd.envoke
             'ctrl-s': @save
             'ctrl-f': @search_cmd.envoke
-
             'ctrl-z': @undo.undo
             'ctrl-shift-z': @undo.redo
-
-
-            #'alt-g': => @show_promt("#goto")
-            #'alt-a': => @show_promt("#command")
-            #'alt-s': => @show_promt("#search")
-
 
         @focus()
 
@@ -803,15 +780,12 @@ class Editor
 
         set_line = (i, html) =>
             $("#line#{i}").html(html)
-            #$("#mm#{i}").html(html) if @minimap
 
         add_line = (i, html) =>
             @$ghost.append("<span id='line#{i}'>#{html}</span>")
-            #@minimap.$minimap.append("<span id='line#{i}'>#{html}</span>") if @minimap
 
         rm_line = (i) =>
             $("#line#{i}").remove()
-            #$("#mm#{i}").remove() if @minimap
 
         # high light if it has changed
         if @old_text != text
@@ -884,8 +858,6 @@ class Editor
         #    print "        update", performance.now()-now, "ms"
         #else
         #    print "        update"
-
-        #@minimap?.real_update()
 
     scroll_pos: (offset) ->
         line = 0
