@@ -2,10 +2,10 @@
 .selection { background: #391f21 !important; color: #959793 !important; }
 .gutter    { background: #0a001f; border-right: 1px solid #aaa; }
 .cursor    { border-left: 1px solid white !important; }
-.undefined { color: #DDD }
-.comment   { color: #656763 }
+.undefined { color: #DDD; }
+.comment   { color: #656763; }
 .atom      { color: #eeeeec; }
-.number    {  color: #729fcf  }
+.number    { color: #729fcf; }
 .attribute { color: #ffd500; }
 
 .operator  { color: #fcaf3e; }
@@ -234,3 +234,4 @@ input {
 ::-webkit-scrollbar-corner {
     background: transparent;
 }
+

@@ -88,7 +88,7 @@ guess_indent = (text) ->
     #print "indents", indents, indent
     return indent
 
-specs =
+window.specs =
     # plain spec highlights strings and quotes and thats it
     plain:
         NAME: "plain"
@@ -105,102 +105,6 @@ specs =
         KEY2: []
         KEY3: []
 
-    python:
-        NAME: "python"
-        FILE_TYPES: "py pyw".split(" ")
-        CASESEN_SITIVE: true
-        MULTILINE_STR: true
-        DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
-        KEYWORD_PREFIX: '&'
-        ESCAPECHAR: "\\"
-        QUOTATION_MARK1: "\""
-        QUOTATION_MARK2: "\'"
-        LINE_COMMENT: "#"
-        PAIRS1: "()"
-        PAIRS2: "[]"
-        PAIRS3: "{}"
-        KEY1: "break continue elif else for if pass return while and not or in del".split(" ")
-        KEY2: "class def import from lambda except finally raise try yield".split(" ")
-        KEY3: "abs divmod input open staticmethod
-            all enumerate int ord str
-            any eval isinstance pow sum
-            basestring execfile issubclass print super
-            bin file iter property tuple
-            bool filter len range type
-            bytearray float list raw_input unichr
-            callable format locals reduce unicode
-            chr frozenset long reload vars
-            classmethod getattr map repr xrange cmp
-            globals max reversed zip compile hasattr
-            memoryview round __import__ complex hash
-            min set apply delattr help next setattr
-            buffer dict hex object slice coerce dir
-            id oct sorted intern".match(/[^ \n]+/g)
-
-    coffee:
-        NAME: "CoffeeScript"
-        FILE_TYPES: ["coffee"]
-        CASESEN_SITIVE: true
-        MULTILINE_STR: true
-        DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
-        KEYWORD_PREFIX: '&'
-        ESCAPECHAR: "\\"
-        QUOTATION_MARK1: "\""
-        QUOTATION_MARK2: "\'"
-        LINE_COMMENT: "#"
-        PAIRS1: "()"
-        PAIRS2: "[]"
-        PAIRS3: "{}"
-        KEY1: "break continue else for if return while and not or in".split(" ")
-        KEY2: "class -> => extends new".split(" ")
-        KEY3: "catch finally throw try".split(" ")
-
-    html:
-        NAME: "html"
-        FILE_TYPES: ["html"]
-        CASESEN_SITIVE: true
-        MULTILINE_STR: true
-        DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
-        KEYWORD_PREFIX: '&'
-        ESCAPECHAR: "\\"
-        QUOTATION_MARK1: "\""
-        QUOTATION_MARK2: "\'"
-        LINE_COMMENT: "#"
-        PAIRS1: "()"
-        PAIRS2: "[]"
-        PAIRS3: "{}"
-        KEY1: [
-            '!doctype', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'b',
-            'base', 'basefont', 'bdo', 'big', 'blockquote', 'body', 'br', 'button',
-            'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'dd', 'del',
-            'dfn', 'dir', 'div', 'dl', 'dt', 'em', 'fieldset', 'font', 'form',
-            'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'hr',
-            'html', 'i', 'iframe', 'img', 'input', 'ins', 'isindex', 'kbd', 'label',
-            'legend', 'li', 'link', 'map', 'menu', 'meta', 'noframes', 'noscript',
-            'object', 'ol', 'optgroup', 'option', 'p', 'param', 'pre', 'q', 's',
-            'samp', 'script', 'select', 'small', 'span', 'strike', 'strong', 'style',
-            'sub', 'sup', 'table', 'tbody', 'td', 'textarea', 'tfoot', 'th', 'thead',
-            'title', 'tr', 'tt', 'u', 'ul', 'var'
-        ]
-        KEY2: [
-            'code', 'text', 'onreset', 'cols', 'datetime', 'disabled', 'accept-charset',
-            'shape', 'codetype', 'alt', 'nam', 'compact', 'onload', 'style', 'lo',
-            'valuetype', 'version', 'onmousemove', 'ti', 'onsubmit', 'onkeypress',
-            'rules', 'nohref', 'abbr', 'background', 'name', 'h', 'summary', 'noshade',
-            'coords', 't', 'onkeyup', 'dir', 'frame', 'usemap', 'ismap', 'onchange',
-            'hspace', 'vlink', 'for', 'selected', 'rev', 'label', 'content', 'onselect',
-            'rel', 'onfocus', 'charoff', 'alink', 'onkeydown', 'codebase', 'span',
-            'scrolli', 'on', 'language', 'standby', 'declare', 's', 'maxlength', 'action',
-            'tabindex', 'va', 'color', 'colspan', 'accesskey', 'height', 'href', 'nowrap',
-            'size', 'rows', 'checked', 'start', 'metho', 'bgcolor', 'onmouseup', 'scope',
-            'type', 'cite', 'onblur', 'onmouseout', 'src', 'valign', 'link', 'onunload',
-            'target', 'align', 'value', 'n', 'widt', 'headers', 'longdesc', 'classid',
-            'defer', 'prompt', 'accept', 'char', 'border', 'archive', 'axis', 'rowspan',
-            'media', 'charset', 'id', 'readonly', 'onclick', 'cellspacing', 'profile',
-            'multiple', 'object', 'cellpadding', 'marginheight', 'data', 'class',
-            'frameborder', 'enctype', 'lang', 'clear', 'face', 'marginwidth', 'ondblclick',
-            'width', 'onmouseover'
-        ]
 
 html_safe = (text) ->
     text.replace(/&/g, '&amp;')
