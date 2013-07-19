@@ -85,7 +85,6 @@ guess_indent = (text) ->
     if indents.length == 0
         return 4
     indent = gcd(indents[0], indents[1])
-    #print "indents", indents, indent
     return indent
 
 window.specs =
@@ -130,10 +129,11 @@ class Tokenizer
                     @spec = spec
                     return
 
-    tokenize: (@line) ->
-        if @token_cache[@line]
-            return @token_cache[@line]
-        return @token_cache[line] = @tokenize_line(@line)
+    tokenize: (@line, @mode) ->
+        key = @mode+"|"+@line
+        if @token_cache[key]
+            return @token_cache[key]
+        return @token_cache[key] = @tokenize_line()
 
     colorize_line: ->
         line = @line
@@ -142,41 +142,50 @@ class Tokenizer
         norm = 0
         old_c = " "
         i = 0
-        while i < line.length
+
+        mode = @mode
+
+        next = ->
             c = line[i]
-            if c == spec.QUOTATION_MARK1 or c == spec.QUOTATION_MARK2
-                start = i
-                i += 1
-                while c != line[i] and i < line.length
-                    if line[i] == spec.ESCAPECHAR
-                        i += 1
-                    i += 1
-                colored.push(["string",line[start..i]])
-                i += 1
-                continue
-
-            if c == spec.LINE_COMMENT
-                colored.push(["comment",line[i..]])
-                break
-
-            if old_c in spec.DELIMITERS
-                skip = @keywords(c, i, line, colored, spec)
-                if skip?
-                    i = skip
-                    continue
-
-            last = colored[colored.length-1]
-            if not last? or last[0] != "text"
-                colored.push(["text", c])
-            else
-                last[1] += c
-            old_c = c
             i += 1
+            return c
 
-        return colored
+        while i < line.length
+            c = next()
+            last = colored[colored.length-1]
+            switch mode
+                when "plain"
+                    if c == spec.QUOTATION_MARK1 or c == spec.QUOTATION_MARK2
+                        mode = c
+                        colored.push(["string", c])
+                        continue
+                    if c == spec.LINE_COMMENT
+                        colored.push(["comment", line[i-1...]])
+                        i = line.length
+                        continue
+                    if old_c in spec.DELIMITERS
+                        skip = @keywords(c, i-1, line, colored, spec)
+                        if skip?
+                            i = skip
+                            continue
+                    if not last? or last[0] != "text"
+                        colored.push(["text", c])
+                    else
+                        last[1] += c
+
+                when spec.QUOTATION_MARK1, spec.QUOTATION_MARK2
+                    if !last?
+                       colored.push(["string", ""])
+                       last = colored[colored.length-1]
+                    last[1] += c
+                    if c == spec.QUOTATION_MARK1 or c == spec.QUOTATION_MARK2
+                        mode = "plain"
+
+            old_c = c
+        return [colored, mode]
 
     tokenize_line: ->
-        colored = @colorize_line()
+        [colored, mode] = @colorize_line()
         out = []
 
         for [cls, words] in colored
@@ -185,7 +194,7 @@ class Tokenizer
             #    out.push("<span class='#{cls}'>#{html_safe(w)}</span>")
         #out.push(@line)
         out.push("\n")
-        return [colored, out.join("")]
+        return [colored, mode, out.join("")]
 
     keywords: (c, i, line, colored, spec) ->
         for k in [0..6]
@@ -222,7 +231,6 @@ class Command
 
     enter: ->
         command = @$input.val()
-        print "eval", command
         js = CoffeeScript.compile(command)
         eval(js)
         esc()
@@ -384,7 +392,6 @@ class SearchBox
     replace: ->
         [text, [start, end], scroll] = editor.get_text_state()
         query = @$search.val()
-        print "[", text.length, "]", start, end, text[start...end], "==", query
         if text[start...end] == query
             replace = @$replace.val()
             text = text[...start] + replace + text[end...]
@@ -547,11 +554,8 @@ class Editor
         keydown = (e) =>
             @update()
             key = keybord_key(e)
-
             if key == "space" or key == "enter" or key == "backspace" or key == "tab"
                 @undo.snapshot()
-
-            #print "key press", key
             @con.socket.emit("keypress", key)
             if @keymap[key]?
                 @keymap[key]()
@@ -658,11 +662,9 @@ class Editor
 
     tab: =>
         if $("#search-input").is(":focus")
-            print "focus replace"
             $("#replace-input").focus()
             return
         if $("#replace-input").is(":focus")
-            print "focus search"
             $("#search-input").focus()
             return
         if not @$pad.is(":focus")
@@ -761,7 +763,6 @@ class Editor
         @$pad.val(text_state[0])
         @$pad[0].selectionEnd = text_state[1][0]
         @$pad[0].selectionStart = text_state[1][1]
-        print "set scrollTop", text_state[2]
         @$holder.animate(scrollTop: text_state[2])
         @update()
 
@@ -775,7 +776,6 @@ class Editor
             [start, end],
             @$holder.scrollTop(),
         ]
-        print "get scrollTop", @$holder.scrollTop()
         return text_state
 
     show_promt: (p) ->
@@ -819,18 +819,24 @@ class Editor
             lines = text.split("\n")
             start = 0
             for line, i in lines
+                if i > 0
+                    prev_mode = @lines[i-1][4]
+                else
+                    prev_mode = "plain"
+
                 end = start + line.length + 1
                 if @lines[i]?
                     oldline = @lines[i]
                     oldline[1] = start
                     oldline[2] = end
                     if oldline[3] != line
-                        [colored, html] = @tokenizer.tokenize(line)
+                        [colored, mode, html] = @tokenizer.tokenize(line, prev_mode)
                         oldline[3] = line
+                        oldline[4] = mode
                         set_line(i, html)
                 else
-                    [colored, html] = @tokenizer.tokenize(line)
-                    @lines.push([i, start, end, line])
+                    [colored, mode, html] = @tokenizer.tokenize(line, prev_mode)
+                    @lines.push([i, start, end, line, mode])
                     add_line(i, html)
                 start = end
             while lines.length < @lines.length
@@ -868,7 +874,6 @@ class Editor
                             caret_text = ""
                         top = $("#line"+line[0]).position().top + 100
                         @$caret_text.html(html_safe(caret_text))
-                        print caret_text
                         @$caret_line.css("top", top)
                         @$caret_char.html(html_safe(text[at..end-1]))
                         @$caret_tail.html(html_safe(text[end..text.indexOf("\n", end)]))
