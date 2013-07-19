@@ -104,7 +104,7 @@ io.sockets.on 'connection', (socket) ->
 
     open = (req) ->
         print "open", req.filename
-        if fs.existsSync(req.filename)
+        if fs.statSync(req.filename).isFile()
             file_data = fs.readFileSync(req.filename, 'utf8')
             socket.emit 'open-push',
                 filename: req.filename
