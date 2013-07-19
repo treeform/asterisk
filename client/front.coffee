@@ -504,12 +504,12 @@ window.cd = (directory) ->
 # the main editor class
 class Editor
 
+    # create a new editor
     constructor: ->
         @fresh = true
         window.editor = @
         @con = new Connection()
-        @filename = "foo"
-
+        @filename = "untiled"
         @tab_width = 4
 
         # grab common elements
@@ -521,8 +521,6 @@ class Editor
         @$highlight = $(".highlight")
         @$errorbox = $("#error-box")
         @$errorbox.hide()
-
-
         # grab careat
         @$caret_line = $("#caret-line")
         @$caret_text = $("#caret-text")
@@ -530,12 +528,6 @@ class Editor
         @$caret_tail = $("#caret-tail")
 
         @auth = new Auth()
-
-        # updates
-        #@$doc.keydown (e) =>
-        #    @update()
-        #    return @key(e)
-
 
         keydown = (e) =>
             @update()
@@ -549,9 +541,7 @@ class Editor
                 e.preventDefault()
                 return null
             return true
-
         window.addEventListener("keydown", keydown, false)
-
 
         @$doc.keyup (e) =>
             @update()
@@ -560,7 +550,6 @@ class Editor
         @$doc.keypress (e) =>
             @update()
             return true
-
         @$doc.mousedown =>
             @mousedown=true
             @update()
@@ -606,9 +595,12 @@ class Editor
         @requset_update = true
         @workloop()
 
+    # open current file
     open: (filename) =>
         @con.socket.emit "open",
              filename: filename
+
+    # save current file
     save: =>
         text = @$pad.val()
         # replace tabs by spaces
@@ -620,11 +612,13 @@ class Editor
             filename: @filename
             data: text
 
+    # focus the pad
     focus: =>
         $("div.popup").hide()
         @$pad.focus()
         @update()
 
+    # return the lines selected
     selected_line_range: ->
         start = null
         end = null
@@ -637,6 +631,7 @@ class Editor
             end = start
         return [start, end]
 
+    # tab was pressed, complex behavior
     tab: =>
         if $("#search-input").is(":focus")
             $("#replace-input").focus()
@@ -651,6 +646,7 @@ class Editor
         @indent()
         return
 
+    # auto complete right at the current cursor
     autocomplete: =>
         [text, [start, end], s] = @get_text_state()
         # if some thing is selected don't auto complete
@@ -674,6 +670,7 @@ class Editor
             return true
         return false
 
+    # insert text into the selected range
     insert_text: (add) =>
         [text, [start, end], s] = @get_text_state()
         text = text[..start-1] + add + text[end..]
@@ -681,6 +678,7 @@ class Editor
         end += add.length
         @set_text_state([text, [start, end], s])
 
+    # indent selected range
     indent: =>
         [start, end] = @selected_line_range()
         if start == end
@@ -700,6 +698,7 @@ class Editor
             @$pad[0].selectionStart = @lines[start][1]
             @$pad[0].selectionEnd = @lines[end][2] + @tab_width * (end-start+1)
 
+    # deindent selected range
     deindent: =>
         [start, end] = @selected_line_range()
         if start == end
@@ -729,20 +728,24 @@ class Editor
             @$pad[0].selectionStart = @lines[start][1]
             @$pad[0].selectionEnd = @$pad[0].selectionStart + new_length
 
+    # set the text of the pad to a value
     set_text: (text) ->
         @$pad.val(text)
         @update()
 
+    # return the text of the pad
     get_text: () ->
         return @$pad.val()
 
+    # set the state of the text
     set_text_state: (text_state) ->
         @$pad.val(text_state[0])
         @$pad[0].selectionEnd = text_state[1][0]
         @$pad[0].selectionStart = text_state[1][1]
-        @$holder.animate(scrollTop: text_state[2])
+        @$holder.stop(true).animate(scrollTop: text_state[2])
         @update()
 
+    # gets the state of the text
     get_text_state: () ->
         start = @$pad[0].selectionStart
         end = @$pad[0].selectionEnd
@@ -755,13 +758,11 @@ class Editor
         ]
         return text_state
 
-    show_promt: (p) ->
-        $(p).show()
-        $(p+" input").focus()
-
+    # request for an update to be made
     update: =>
         @requset_update = true
 
+    # redraw the ghost buffer
     real_update: ->
         if performance? and performance.now?
             now = performance.now()
@@ -859,6 +860,7 @@ class Editor
         #else
         #    print "        update"
 
+    # scroll to a char position
     scroll_pos: (offset) ->
         line = 0
         for c in @text[0...offset]
@@ -866,23 +868,26 @@ class Editor
                 line += 1
         @scroll_line(line)
 
+    # go to a line number
     goto_line: (line_num) ->
         line = @lines[line_num] ? @lines[@lines.length - 1]
         @$pad[0].selectionStart = line[1]
         @$pad[0].selectionEnd = line[1]
         @scroll_line(line[0])
 
-
+    # animate a scroll to a line number
     scroll_line: (line_num) ->
         line = @lines[line_num] ? @lines[@lines.length - 1]
         y = @get_line_y(line[0])
         y -= @$win.height()/2
-        @$holder.animate(scrollTop: y)
+        @$holder.stop(true).animate(scrollTop: y)
 
+    # get line's y cordiante for scrolling
     get_line_y: (line_num) ->
         top = $("#line"+line_num).position().top + 100
         return top
 
+    # loop that does the work for rendering when update is requested
     workloop: =>
         if @requset_update
             @real_update()
