@@ -16,6 +16,8 @@ path = require('path')
 child_process = require('child_process')
 fs = require('fs')
 http = require('http');
+sys = require('sys')
+exec = require('child_process').exec
 
 read_config = ->
     try
@@ -36,6 +38,8 @@ mimeTypes = {
     "js": "text/javascript",
     "css": "text/css"};
 
+begins_with = (str, frag) -> str.match(new RegExp "^#{frag}")?
+ends_with = (str, frag) -> str.match(new RegExp "#{frag}$")?
 #options =
 #  key: fs.readFileSync('secure/privatekey.pem'),
 #  cert: fs.readFileSync('secure/certificate.pem')
@@ -79,6 +83,25 @@ class Client
     constructor: (@idne) ->
 
 
+lint = (s, filename) ->
+    if ends_with(filename, ".py")
+        pylint(s, filename)
+
+pylint = (s, filename) ->
+    print "running lint", s, filename
+    command = "pylint #{filename} -f parseable -r n --disable=W0621"
+    exec command, (error, stdout, stderr) ->
+        marks = for line in stdout.split("\n")
+            m = line.match(/.*:(\d*):\s\[(.*)\]\s(.*)/)
+            if m
+                mark =
+                    line: m[1]
+                    tag: m[2]
+                    text: m[3]
+        console.log marks
+        s.emit 'marks-push',
+            filename: filename
+            marks: marks
 
 io.sockets.on 'connection', (socket) ->
     iden = gen_iden()
@@ -131,6 +154,7 @@ io.sockets.on 'connection', (socket) ->
         print "save", req.filename
         try
             fs.writeFileSync(req.filename, req.data, 'utf8')
+            lint(socket, req.filename)
         catch e
             socket.emit 'error-push',
                 message: "error #{e} writing '#{req.filename}'"

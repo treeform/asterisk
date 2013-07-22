@@ -490,6 +490,8 @@ class Connection
             editor.$errorbox.show()
             editor.$errorbox.html(error.message)
 
+        @socket.on 'marks-push', (marks) -> editor.add_marks(marks)
+
 
 window.esc = ->
     editor.$errorbox.hide()
@@ -561,6 +563,9 @@ class Editor
             @update()
         @$win.resize(@update)
         @$doc.click(@update)
+
+        @$doc.on "mouseenter", ".mark", (e) ->
+            print e
 
         # keeps all the highlight state
         @lines = []
@@ -769,12 +774,14 @@ class Editor
 
         # adjust hight and width of things
         @height = @$win.height()
-        @width = @$win.width()
+        @width = @$win.width() - 10  # 10 for scrollbar
         @$holder.height(@height)
-        @$holder.width(@width-10) #-10 for scrollbar
-        @$pad.width(@width)
-        @$ghost.width(@width)
-        @$highlight.width(@width)
+        a = 4
+        @$holder.width(@width)
+        @$pad.width(@width-a)
+        @$ghost.width(@width-a)
+        @$highlight.width(@width-a)
+        @$caret_line.width(@width-a)
 
         # get the current text
         @text = text = @$pad.val() or ""
@@ -886,6 +893,18 @@ class Editor
     get_line_y: (line_num) ->
         top = $("#line"+line_num).position().top + 100
         return top
+
+    # adds the makrs about lint stuff to the editor
+    add_marks: (marks) ->
+
+        if marks.filename == @filename
+
+            $(".ghost .mark").remove()
+
+            for mark in marks.marks
+                continue if not mark
+                $line = $("#line"+(mark.line-1))
+                $line.append("<div class='mark'><div class='mark-text'>#{mark.tag}:#{mark.text}</div>&#9679;</div>")
 
     # loop that does the work for rendering when update is requested
     workloop: =>

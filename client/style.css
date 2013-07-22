@@ -46,7 +46,6 @@ body {
 #caret-line {
     position: absolute;
     display: inline-block;
-    width: 100%;
     overflow: visible;
     background-color: #200;
     white-space: pre-wrap;
@@ -233,5 +232,16 @@ input {
 }
 ::-webkit-scrollbar-corner {
     background: transparent;
+}
+
+.mark {
+    position: absolute;
+    right: 0px;
+    color: #833602;
+    z-index: 1000;
+}
+
+.mark-text {
+    display: none;
 }
 
