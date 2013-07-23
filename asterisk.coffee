@@ -132,6 +132,7 @@ io.sockets.on 'connection', (socket) ->
             socket.emit 'open-push',
                 filename: req.filename
                 data: file_data
+            lint(socket, req.filename)
             last_filename = req.filename
         else
             socket.emit 'error-push',
