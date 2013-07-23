@@ -178,7 +178,10 @@ class Tokenizer
                        colored.push(["string", ""])
                        last = colored[colored.length-1]
                     last[1] += c
-                    if c == mode
+                    if c == spec.ESCAPECHAR
+                       c = next()
+                       last[1] += c
+                    else if c == mode
                         mode = "plain"
 
             old_c = c
@@ -816,7 +819,7 @@ class Editor
                     oldline = @lines[i]
                     oldline[1] = start
                     oldline[2] = end
-                    if oldline[3] != line
+                    if oldline[3] != line or oldline[4][0] != prev_mode
                         [colored, mode, html] = @tokenizer.tokenize(line, prev_mode)
                         oldline[3] = line
                         oldline[4] = mode
@@ -919,4 +922,3 @@ class Editor
 
 $ ->
     window.editor = new Editor()
-
