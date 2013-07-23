@@ -68,7 +68,11 @@ body {
     -webkit-flex-direction: column;
     white-space: pre-wrap;
     word-wrap: break-word;
-
+}
+.marks {
+    position: absolute;
+    top: 100px;
+    z-index: 3;
 }
 
 .highlight {
@@ -242,6 +246,10 @@ input {
 }
 
 .mark-text {
+    position: absolute;
+    right: 15px;
     display: none;
+    width: 300px;
+    background-color: black;
+    padding: 10px;
 }
-

@@ -518,6 +518,7 @@ class Editor
         @$doc = $(document)
         @$win = $(window)
         @$holder = $(".holder")
+        @$marks = $(".marks")
         @$pad = $(".pad")
         @$ghost = $(".ghost")
         @$highlight = $(".highlight")
@@ -565,7 +566,9 @@ class Editor
         @$doc.click(@update)
 
         @$doc.on "mouseenter", ".mark", (e) ->
-            print e
+            $(".mark-text").hide()
+            $(e.target).find(".mark-text").show()
+
 
         # keeps all the highlight state
         @lines = []
@@ -782,6 +785,8 @@ class Editor
         @$ghost.width(@width-a)
         @$highlight.width(@width-a)
         @$caret_line.width(@width-a)
+        @$marks.width(@width-a)
+
 
         # get the current text
         @text = text = @$pad.val() or ""
@@ -898,13 +903,12 @@ class Editor
     add_marks: (marks) ->
 
         if marks.filename == @filename
-
-            $(".ghost .mark").remove()
-
+            @$marks.html("")
             for mark in marks.marks
                 continue if not mark
                 $line = $("#line"+(mark.line-1))
-                $line.append("<div class='mark'><div class='mark-text'>#{mark.tag}:#{mark.text}</div>&#9679;</div>")
+                p = $line.position()
+                @$marks.append("<div class='mark' style='top:#{p.top}px'><div class='mark-text'>#{mark.tag}:#{mark.text}</div>&#9679;</div>")
 
     # loop that does the work for rendering when update is requested
     workloop: =>
