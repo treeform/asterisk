@@ -178,7 +178,7 @@ class Tokenizer
                        colored.push(["string", ""])
                        last = colored[colored.length-1]
                     last[1] += c
-                    if c == spec.QUOTATION_MARK1 or c == spec.QUOTATION_MARK2
+                    if c == mode
                         mode = "plain"
 
             old_c = c
@@ -919,3 +919,4 @@ class Editor
 
 $ ->
     window.editor = new Editor()
+

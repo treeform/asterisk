@@ -86,6 +86,9 @@ class Client
 lint = (s, filename) ->
     if ends_with(filename, ".py")
         pylint(s, filename)
+    if ends_with(filename, ".coffee")
+        coffeemake(s, filename)
+
 
 pylint = (s, filename) ->
     print "running lint", s, filename
@@ -98,6 +101,37 @@ pylint = (s, filename) ->
                     line: m[1]
                     tag: m[2]
                     text: m[3]
+            else
+                continue
+        console.log marks
+        s.emit 'marks-push',
+            filename: filename
+            marks: marks
+
+
+coffeemake = (s, filename) ->
+    print "running coffee", filename
+    command = "coffee -c #{filename}"
+    exec command, (error, stdout, stderr) ->
+        marks = []
+        for line in stderr.split("\n")
+            m = line.match("line (.+):(.*)")
+            print m, line
+            if m
+                marks.push
+                    line: m[1]
+                    tag: 'error'
+                    text: m[2]
+
+            m = line.match(",(.*), starting on line (.*)")
+            print m, line
+            if m
+                marks.push
+                    line: m[2]
+                    tag: 'error'
+                    text: m[1]
+
+
         console.log marks
         s.emit 'marks-push',
             filename: filename
@@ -185,4 +219,3 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'disconnect', ->
         print iden, ":", "disconnected"
-
