@@ -109,7 +109,7 @@ html_safe = (text) ->
     text.replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
+        .replace(/"/g, '&quot;') #"
         .replace(/'/g, '&#x27;')
         .replace(/\//g,'&#x2F;');
 
@@ -311,6 +311,9 @@ class OpenFile
 
     open_push: (res) ->
         editor.fresh = false
+        if editor.filename != res.filename
+            editor.undo.clear()
+
         editor.filename = res.filename
         editor.tokenizer.guess_spec(res.filename)
         m = res.filename.match("\/([^\/]*)$")
@@ -318,6 +321,7 @@ class OpenFile
         $("title").html(title)
         window.history.pushState({}, "", "/edit/" + res.filename)
         editor.$pad.val(res.data)
+        editor.undo.snapshot()
         editor.update()
 
     open_suggest_push: (res) ->
@@ -411,8 +415,11 @@ class UndoStack
         @redos = []
 
     undo: =>
-        if @undos.length > 1
+        if @undos.length > 0
             text = @undos.pop()
+            # dont allow to pop 1st undo
+            if @undos.length == 0
+                @undos.push(text)
             @redos.push(editor.get_text_state())
             editor.set_text_state(text)
 
@@ -424,8 +431,9 @@ class UndoStack
 
     snapshot: =>
         text = editor.get_text_state()
+        old_text = @undos[@undos.length-1]
         @redos = []
-        if @undos[@undo.length-1] != text
+        if !old_text? or old_text[0] != text[0]
             @undos.push(text)
 
 
@@ -538,7 +546,8 @@ class Editor
         keydown = (e) =>
             @update()
             key = keybord_key(e)
-            if key == "space" or key == "enter" or key == "backspace" or key == "tab"
+            if key.length != 1 and key.indexOf("-") == -1
+                # for all non character keys non meta
                 @undo.snapshot()
             @con.socket.emit("keypress", key)
             if @keymap[key]?
@@ -557,6 +566,7 @@ class Editor
             @update()
             return true
         @$doc.mousedown =>
+            @undo.snapshot()
             @mousedown=true
             @update()
         @$doc.mousemove =>
@@ -618,7 +628,7 @@ class Editor
         space = (" " for _ in [0...@tab_width]).join("")
         text = text.replace(/\t/g, space)
         # strip trailing white space onlines
-        text = text.replace(/[ \r]*\n/g,"\n").replace(/\s*$/g, "\n")
+        text = text.replace(/[ \r]*\n/g,"\n").replace(/\s*$/, "\n")
         @con.socket.emit "save",
             filename: @filename
             data: text

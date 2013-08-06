@@ -123,7 +123,7 @@ coffeemake = (s, filename) ->
                     tag: 'error'
                     text: m[2]
 
-            m = line.match(",(.*), starting on line (.*)")
+            m = line.match(",(.*) on line (.*)")
             print m, line
             if m
                 marks.push
@@ -219,3 +219,4 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'disconnect', ->
         print iden, ":", "disconnected"
+
