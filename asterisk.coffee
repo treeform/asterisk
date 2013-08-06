@@ -6,10 +6,6 @@
 # <- save file
 # -> file changed
 # -> check results
-print = (args...) -> console.log args...
-
-gen_iden = -> Math.random().toString(32)[2..]
-
 io = require('socket.io').listen(8080)
 events = require('events')
 path = require('path')
@@ -18,6 +14,11 @@ fs = require('fs')
 http = require('http');
 sys = require('sys')
 exec = require('child_process').exec
+
+
+print = (args...) -> console.log args...
+gen_iden = -> Math.random().toString(32)[2..]
+
 
 read_config = ->
     try
@@ -29,8 +30,8 @@ read_config = ->
     catch e
         print "could not parse ~/.asterisk.json"
     return {'username': 'admin', 'password': '123'}
-
 config = read_config()
+
 
 mimeTypes = {
     "html": "text/html",
@@ -38,12 +39,9 @@ mimeTypes = {
     "js": "text/javascript",
     "css": "text/css"};
 
+
 begins_with = (str, frag) -> str.match(new RegExp "^#{frag}")?
 ends_with = (str, frag) -> str.match(new RegExp "#{frag}$")?
-#options =
-#  key: fs.readFileSync('secure/privatekey.pem'),
-#  cert: fs.readFileSync('secure/certificate.pem')
-
 server = http.createServer (req, res) ->
     try
         print("client/"+req.url[1..])
@@ -59,6 +57,7 @@ server = http.createServer (req, res) ->
         buffer = buffer.toString().replace("$rand", gen_iden())
         res.end(buffer)
 server.listen(1988)
+
 
 findem = (dir, s) ->
     ev = new events.EventEmitter()
@@ -77,8 +76,12 @@ findem = (dir, s) ->
         ev.emit("end", files)
     return ev
 
-clients = {}
 
+file_exists = (filename) ->
+    fs.existsSync(filename) and fs.statSync(filename).isFile()
+
+
+clients = {}
 class Client
     constructor: (@idne) ->
 
@@ -137,6 +140,7 @@ coffeemake = (s, filename) ->
             filename: filename
             marks: marks
 
+
 io.sockets.on 'connection', (socket) ->
     iden = gen_iden()
     clients[iden] = Client(iden)
@@ -144,6 +148,23 @@ io.sockets.on 'connection', (socket) ->
     print iden, ":", "connected"
 
     loggedin = false
+
+    filename = null
+
+    # alert the editor when file changes
+    watching_filename = null
+    watch = () ->
+        if watching_filename
+            fs.unwatchFile(watching_filename)
+        watching_filename = filename
+        if filename and file_exists(filename)
+            fs.watchFile filename, (curr, prev) ->
+                if filename and file_exists(filename)
+                    file_data = fs.readFileSync(filename, 'utf8')
+                    socket.emit 'open-push',
+                        filename: filename,
+                        data: file_data
+                    lint(socket, filename)
 
     socket.on 'auth', (auth) ->
         if auth.username == config.username and auth.password == config.password
@@ -160,21 +181,22 @@ io.sockets.on 'connection', (socket) ->
             kind: "ribbon"
 
     open = (req) ->
-        print "open", req.filename
-        if fs.existsSync(req.filename) and fs.statSync(req.filename).isFile()
-            file_data = fs.readFileSync(req.filename, 'utf8')
+        filename = req.filename
+        print "open", filename
+        if file_exists(filename)
+            file_data = fs.readFileSync(filename, 'utf8')
             socket.emit 'open-push',
-                filename: req.filename
+                filename: filename
                 data: file_data
-            lint(socket, req.filename)
-            last_filename = req.filename
+            lint(socket, filename)
+            watch()
         else
             socket.emit 'error-push',
                 message: "filename '#{req.filename}' not found, saveing will create new file"
                 kind: "ribbon"
             # push an empty file up
             socket.emit 'open-push',
-                filename: req.filename
+                filename: filename
                 data: ""
 
     socket.on 'keypress', (data) ->
@@ -186,13 +208,15 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'save', (req) ->
         return error("not logged in") if not loggedin
-        print "save", req.filename
+        filename = req.filename
+        print "save", filename
         try
-            fs.writeFileSync(req.filename, req.data, 'utf8')
-            lint(socket, req.filename)
+            fs.writeFileSync(filename, req.data, 'utf8')
+            lint(socket, filename)
+            watch()
         catch e
             socket.emit 'error-push',
-                message: "error #{e} writing '#{req.filename}'"
+                message: "error #{e} writing '#{filename}'"
                 kind: "ribbon"
 
     socket.on 'suggest', (req) ->
@@ -219,4 +243,5 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'disconnect', ->
         print iden, ":", "disconnected"
-
+        filename = null
+        watch()

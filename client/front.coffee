@@ -155,7 +155,9 @@ class Tokenizer
             last = colored[colored.length-1]
             switch mode
                 when "plain"
-                    if c == spec.QUOTATION_MARK1 or c == spec.QUOTATION_MARK2
+                    if c == spec.QUOTATION_MARK1 or
+                      c == spec.QUOTATION_MARK2 or
+                      c == spec.QUOTATION_MARK3
                         mode = c
                         colored.push(["string", c])
                         continue
@@ -173,7 +175,9 @@ class Tokenizer
                     else
                         last[1] += c
 
-                when spec.QUOTATION_MARK1, spec.QUOTATION_MARK2
+                when spec.QUOTATION_MARK1,
+                  spec.QUOTATION_MARK2,
+                  spec.QUOTATION_MARK3
                     if !last?
                        colored.push(["string", ""])
                        last = colored[colored.length-1]

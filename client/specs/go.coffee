@@ -8,7 +8,7 @@ window.specs.css =
     ESCAPECHAR: "\\"
     QUOTATION_MARK1: "\""
     QUOTATION_MARK2: "\'"
-    LINE_COMMENT: ""
+    LINE_COMMENT: "//"
     PAIRS1: "()"
     PAIRS2: "[]"
     PAIRS3: "{}"
@@ -29,3 +29,4 @@ window.specs.css =
         "append", "cap", "close", "complex", "copy", "delete", "imag", "len",
         "make", "new", "panic", "print", "println", "real", "recover"
     ]
+
