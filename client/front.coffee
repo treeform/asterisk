@@ -175,9 +175,7 @@ class Tokenizer
                     else
                         last[1] += c
 
-                when spec.QUOTATION_MARK1,
-                  spec.QUOTATION_MARK2,
-                  spec.QUOTATION_MARK3
+                when spec.QUOTATION_MARK1, spec.QUOTATION_MARK2, spec.QUOTATION_MARK3
                     if !last?
                        colored.push(["string", ""])
                        last = colored[colored.length-1]
