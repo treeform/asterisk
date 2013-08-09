@@ -143,7 +143,7 @@ class Tokenizer
         old_c = " "
         i = 0
 
-        mode = @mode
+        mode = in_mode = @mode[1]
 
         next = ->
             c = line[i]
@@ -187,7 +187,7 @@ class Tokenizer
                         mode = "plain"
 
             old_c = c
-        return [colored, mode]
+        return [colored, [in_mode, mode]]
 
     tokenize_line: ->
         [colored, mode] = @colorize_line()
@@ -199,6 +199,7 @@ class Tokenizer
             #    out.push("<span class='#{cls}'>#{html_safe(w)}</span>")
         #out.push(@line)
         out.push("\n")
+        print "line", [colored, mode, out.join("")]
         return [colored, mode, out.join("")]
 
     keywords: (c, i, line, colored, spec) ->
@@ -827,7 +828,7 @@ class Editor
                 if i > 0
                     prev_mode = @lines[i-1][4]
                 else
-                    prev_mode = "plain"
+                    prev_mode = ["plain", "plain"]
 
                 end = start + line.length + 1
                 if @lines[i]?
