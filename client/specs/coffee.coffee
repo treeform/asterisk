@@ -8,7 +8,7 @@ window.specs.coffee =
     ESCAPECHAR: "\\"
     QUOTATION_MARK1: "\""
     QUOTATION_MARK2: "\'"
-    QUOTATION_MARK3: "/"
+    QUOTATION_MARK3: "`"
     LINE_COMMENT: "#"
     PAIRS1: "()"
     PAIRS2: "[]"
