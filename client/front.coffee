@@ -808,6 +808,9 @@ class Editor
 
         set_line = (i, html) =>
             $("#line#{i}").html(html)
+            # for debugging refresh performance
+            #$("#line#{i}").stop().css("opacity", 0)
+            #$("#line#{i}").animate({opacity: 1}, 300);
 
         add_line = (i, html) =>
             @$ghost.append("<span id='line#{i}'>#{html}</span>")
@@ -831,11 +834,13 @@ class Editor
                     oldline = @lines[i]
                     oldline[1] = start
                     oldline[2] = end
-                    if oldline[3] != line or oldline[4][0] != prev_mode
+                    if oldline[3] != line or oldline[4] != prev_mode
+                        #console.log oldline[3], "!=", line, "or", oldline[4][0], "!=", prev_mode
                         [colored, mode, html] = @tokenizer.tokenize(line, prev_mode)
                         oldline[3] = line
                         oldline[4] = mode
                         set_line(i, html)
+
                 else
                     [colored, mode, html] = @tokenizer.tokenize(line, prev_mode)
                     @lines.push([i, start, end, line, mode])

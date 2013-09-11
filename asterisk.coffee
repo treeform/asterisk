@@ -133,8 +133,6 @@ coffeemake = (s, filename) ->
                     line: m[2]
                     tag: 'error'
                     text: m[1]
-
-
         console.log marks
         s.emit 'marks-push',
             filename: filename
