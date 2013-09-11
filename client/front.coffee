@@ -327,6 +327,8 @@ class OpenFile
         editor.undo.snapshot()
         editor.update()
 
+        @add_common(res.filename)
+
     open_suggest_push: (res) ->
         @$sug.children().remove()
         search = @$input.val()
@@ -334,6 +336,26 @@ class OpenFile
             file = file.replace(search,"<b>#{search}</b>")
             @$sug.append("<div class='sug'>#{file}<div>")
 
+        console.log @get_common()
+        for file in @get_common()
+            if file.indexOf(search) != -1
+                file = file.replace(search,"<b>#{search}</b>")
+                @$sug.append("<div class='sug sug-common'>#{file}<div>")
+
+    add_common: (file) ->
+        common = @get_common()
+        for f, n in common
+            if f == file
+                common.splice(n,1)
+                break
+        common.push(file)
+        common = localStorage.setItem("common", JSON.stringify(common))
+
+    get_common: ->
+        common = localStorage.getItem("common")
+        if common?
+            return JSON.parse(common)
+        return []
 
 # command line diolog
 class SearchBox

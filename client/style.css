@@ -11,7 +11,7 @@
 .operator  { color: #fcaf3e; }
 .string    { color: #8ae234; }
 .string-2  { color: #9d1e15; }
-.meta      { color: #8CA48A; }
+.meta      { color: #8CA48AL; }
 .tag       { color: #99b2ff; }
 .error     { color: #9d1e15; }
 .variable-2{ color: #ffd500; }
@@ -199,8 +199,15 @@ input {
     padding: 5px 30px;
 }
 
+
+.sug-common {
+    color: #EEE;
+}
 .sug-highlight {
     color: #fcaf3e;
+}
+.sug b {
+    color: #FFF;
 }
 
 #mini-map {
