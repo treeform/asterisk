@@ -836,7 +836,8 @@ class Editor
                     oldline[1] = start
                     oldline[2] = end
                     #console.log [oldline[3], "!=", line, "or", oldline[4], "!=", prev_mode]
-                    if oldline[3] != line or oldline[4] != prev_mode
+                    if oldline[3] != line or prev_mode[1] != oldline[4][0]
+                    #iif oldline[3] != line or oldline[4] != prev_mode
                         #console.log "true"
                         [colored, mode, html] = @tokenizer.tokenize(line, prev_mode)
                         oldline[3] = line
