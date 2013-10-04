@@ -55,9 +55,11 @@ input:focus {
     background-color: #200;
     white-space: pre-wrap;
 }
+
 #caret-text, #caret-tail {
     color: rgba(0,0,0,0);
 }
+
 #caret-char {
     color: #555;
     background-color: #500;
@@ -184,19 +186,23 @@ input {
     color: white;
     z-index: 10;
 }
+
 #login-box img {
     display: block;
     margin: 10px auto;
 }
+
 #login-box input {
     padding: 5px;
 }
+
 #login-box div {
     display: block;
     margin: 10px auto;
     width: 280px;
     text-align: right;
 }
+
 #login-box button {
     background-color: #500;
     color: #DDD;
@@ -205,16 +211,18 @@ input {
     padding: 5px 30px;
 }
 
-
 .sug-common {
     color: #EEE;
 }
+
 .sug-highlight {
     color: #fcaf3e;
 }
+
 .sug b {
     color: #FFF;
 }
+
 .sug:hover {
     color: #fcaf3e;
 }
@@ -234,7 +242,6 @@ input {
     color: white;
     white-space: pre-wrap;
 }
-
 
 ::-webkit-scrollbar {
     width: 8px;
