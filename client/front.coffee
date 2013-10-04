@@ -279,6 +279,10 @@ class OpenFile
         @$sug = $("#open-sugest")
         @$input.keyup @keyup
         @directory = localStorage.getItem("directory") or "."
+        @$sug.on "click", ".sug", (e) ->
+            filename = $(e.currentTarget).text()
+            esc()
+            editor.open(filename)
 
     keyup: (e) =>
         key = keybord_key(e)

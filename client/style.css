@@ -35,6 +35,11 @@ body {
     color: white;
 }
 
+input:focus {
+    outline-width: 0;
+    background: #391f21;
+}
+
 .holder {
     position: relative;
     height: 100px;
@@ -145,6 +150,7 @@ input {
 
 #open-box div {
     margin: 2px;
+    margin-left: 22px;
 }
 
 #search-box input {
@@ -208,6 +214,9 @@ input {
 }
 .sug b {
     color: #FFF;
+}
+.sug:hover {
+    color: #fcaf3e;
 }
 
 #mini-map {
