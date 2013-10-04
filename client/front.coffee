@@ -122,7 +122,11 @@ class Tokenizer
 
     guess_spec: (filename) ->
         @spec = specs.plain
-        ext = filename.match("\.([^\.]*)$").pop()
+        m = filename.match("\.([^\.]*)$")
+        if not m
+            ext = "txt"
+        else
+            ext = m.pop()
         for name, spec of specs
             for t in spec.FILE_TYPES
                 if ext == t
@@ -199,7 +203,7 @@ class Tokenizer
             #    out.push("<span class='#{cls}'>#{html_safe(w)}</span>")
         #out.push(@line)
         out.push("\n")
-        print "line", [colored, mode, out.join("")]
+        #print "line", [colored, mode, out.join("")]
         return [colored, mode, out.join("")]
 
     keywords: (c, i, line, colored, spec) ->
@@ -313,20 +317,7 @@ class OpenFile
         editor.open(filename)
 
     open_push: (res) ->
-        editor.fresh = false
-        if editor.filename != res.filename
-            editor.undo.clear()
-
-        editor.filename = res.filename
-        editor.tokenizer.guess_spec(res.filename)
-        m = res.filename.match("\/([^\/]*)$")
-        title = if m then m.pop() else res.filename
-        $("title").html(title)
-        window.history.pushState({}, "", "/edit/" + res.filename)
-        editor.$pad.val(res.data)
-        editor.undo.snapshot()
-        editor.update()
-
+        editor.opened(res.filename, res.data)
         @add_common(res.filename)
 
     open_suggest_push: (res) ->
@@ -335,8 +326,7 @@ class OpenFile
         for file in res.files
             file = file.replace(search,"<b>#{search}</b>")
             @$sug.append("<div class='sug'>#{file}<div>")
-
-        console.log @get_common()
+        # add in common files
         for file in @get_common()
             if file.indexOf(search) != -1
                 file = file.replace(search,"<b>#{search}</b>")
@@ -348,7 +338,8 @@ class OpenFile
             if f == file
                 common.splice(n,1)
                 break
-        common.push(file)
+        common.unshift(file)
+        common = common[..10]
         common = localStorage.setItem("common", JSON.stringify(common))
 
     get_common: ->
@@ -645,6 +636,27 @@ class Editor
     open: (filename) =>
         @con.socket.emit "open",
              filename: filename
+
+    # opened
+    opened: (filename, textdata) ->
+
+        @fresh = false
+        if @filename != filename
+            @undo.clear()
+
+        @filename = filename
+        @tokenizer.guess_spec(filename)
+        m = filename.match("\/([^\/]*)$")
+        title = if m then m.pop() else filename
+        $("title").html(title)
+        window.history.pushState({}, "", "/edit/" + filename)
+        @$pad.val(textdata)
+        @undo.snapshot()
+        @clear_makrs()
+        @update()
+
+
+
 
     # save current file
     save: =>
@@ -945,7 +957,6 @@ class Editor
 
     # adds the makrs about lint stuff to the editor
     add_marks: (marks) ->
-
         if marks.filename == @filename
             @$marks.html("")
             for mark in marks.marks
@@ -953,6 +964,9 @@ class Editor
                 $line = $("#line"+(mark.line-1))
                 p = $line.position()
                 @$marks.append("<div class='mark' style='top:#{p.top}px'><div class='mark-text'>#{mark.tag}:#{mark.text}</div>&#9679;</div>")
+
+    clear_makrs: ->
+        @$marks.html("")
 
     # loop that does the work for rendering when update is requested
     workloop: =>
