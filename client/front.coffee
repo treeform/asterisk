@@ -129,6 +129,7 @@ class Tokenizer
             ext = m.pop()
         for name, spec of specs
             for t in spec.FILE_TYPES
+                console.log t, name, specs
                 if ext == t
                     @spec = spec
                     return

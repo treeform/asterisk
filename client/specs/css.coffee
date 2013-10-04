@@ -1,6 +1,6 @@
 window.specs.css =
     NAME: "css"
-    FILE_TYPES: ["css"]
+    FILE_TYPES: ["css", "less", "sass", "scss"]
     CASESEN_SITIVE: true
     MULTILINE_STR: true
     DELIMITERS: " (){}[]<>+*/%=\"'~!@#&$^&|\\?:;,."

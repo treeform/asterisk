@@ -1,4 +1,4 @@
-window.specs.css =
+window.specs.go =
     NAME: "go"
     FILE_TYPES: ["go"]
     CASESEN_SITIVE: true
@@ -29,4 +29,3 @@ window.specs.css =
         "append", "cap", "close", "complex", "copy", "delete", "imag", "len",
         "make", "new", "panic", "print", "println", "real", "recover"
     ]
-
