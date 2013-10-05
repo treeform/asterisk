@@ -6,10 +6,11 @@ window.specs.coffee =
     DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
     KEYWORD_PREFIX: '&'
     ESCAPECHAR: "\\"
-    QUOTATION_MARK1: "\""
-    QUOTATION_MARK2: "\'"
-    QUOTATION_MARK3: "`"
+    QUOTATION_MARK1: '"""' #"\""
+    QUOTATION_MARK2: "'"
+    QUOTATION_MARK3: '"'
     LINE_COMMENT: "#"
+    BLOCK_COMMENT: ["###", "###"]
     PAIRS1: "()"
     PAIRS2: "[]"
     PAIRS3: "{}"

@@ -1,8 +1,19 @@
 
 # escape
 "sdfsdf
-
 sdfsdf"
+
+"""
+ertedfg
+"
+sdfsdf
+  \"""
+
+
+"""
+
+
+regex = /\"/gi + "foo"
 
 ###
 

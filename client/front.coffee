@@ -150,28 +150,46 @@ class Tokenizer
 
         mode = in_mode = @mode[1]
 
-        next = ->
+        next_char = ->
             c = line[i]
             i += 1
             return c
 
+        match = (str) ->
+            substr = line[i...i + str.length]
+            if substr == str
+                i += str.length
+                return substr
+            else
+                return false
+
+
+
+
         while i < line.length
-            c = next()
             last = colored[colored.length-1]
+
             switch mode
                 when "plain"
-                    if c == spec.ESCAPECHAR
+                    if c = match(spec.ESCAPECHAR)
                         last[1] += c
-                        c = next()
+                        c = next_char()
+                        if c
+                            last[1] += c
+                        continue
+
+                    if c = match(spec.ESCAPECHAR)
+                        last[1] += c
+                        c = next_char()
                         last[1] += c
                         continue
-                    if c == spec.QUOTATION_MARK1 or
-                      c == spec.QUOTATION_MARK2 or
-                      c == spec.QUOTATION_MARK3
+                    if c = match(spec.QUOTATION_MARK1) or
+                      c = match(spec.QUOTATION_MARK2) or
+                      c = match(spec.QUOTATION_MARK3)
                         mode = c
                         colored.push(["string", c])
                         continue
-                    if c == spec.LINE_COMMENT
+                    if c = match(spec.LINE_COMMENT)
                         colored.push(["comment", line[i-1...]])
                         i = line.length
                         continue
@@ -181,6 +199,7 @@ class Tokenizer
                             i = skip
                             continue
 
+                    c = next_char()
                     if not last? or last[0] != "text"
                         colored.push(["text", c])
                     else
@@ -190,14 +209,23 @@ class Tokenizer
                     if !last?
                        colored.push(["string", ""])
                        last = colored[colored.length-1]
-                    last[1] += c
-                    if c == spec.ESCAPECHAR
-                       c = next()
-                       last[1] += c
-                    else if c == mode
-                        mode = "plain"
 
-            old_c = c
+                    if c = match(spec.ESCAPECHAR)
+                        last[1] += c
+                        c = next_char()
+                        if c
+                            last[1] += c
+                        continue
+
+                    if c = match(mode)
+                        last[1] += c
+                        mode = "plain"
+                        continue
+
+                    c = next_char()
+                    last[1] += c
+
+        console.log JSON.stringify(colored)
         return [colored, [in_mode, mode]]
 
     tokenize_line: ->
