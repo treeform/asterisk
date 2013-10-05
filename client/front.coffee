@@ -132,6 +132,7 @@ class Tokenizer
                 console.log t, name, specs
                 if ext == t
                     @spec = spec
+                    @token_cache = {}
                     return
 
     tokenize: (@line, @mode) ->
@@ -141,11 +142,13 @@ class Tokenizer
         return @token_cache[key] = @tokenize_line()
 
     colorize_line: ->
+
+
         line = @line
         spec = @spec
         colored = []
         norm = 0
-        old_c = " "
+
         i = 0
 
         mode = in_mode = @mode[1]
@@ -155,6 +158,9 @@ class Tokenizer
             i += 1
             return c
 
+        prev_char = ->
+            return line[i-1] or " "
+
         match = (str) ->
             substr = line[i...i + str.length]
             if substr == str
@@ -163,69 +169,74 @@ class Tokenizer
             else
                 return false
 
+        keywords =  ->
+            for k in [0..6]
+                if spec["KEY"+k]?
+                    for key_word in spec["KEY"+k]
+                        text = line[i...i + key_word.length]
+                        end = line[i+key_word.length]
+                        if text == key_word and (end in spec.DELIMITERS or not end)
+                            add_str("key"+k, match(key_word))
+                            return true
+            return false
 
+        add_str = (mode, str) ->
+            if not str
+                return
+            last = colored[colored.length-1]
+            if not last or last[0] != mode
+                colored.push([mode, str])
+            else
+                last[1] += str
 
 
         while i < line.length
-            last = colored[colored.length-1]
 
             switch mode
                 when "plain"
                     if c = match(spec.ESCAPECHAR)
-                        last[1] += c
-                        c = next_char()
-                        if c
-                            last[1] += c
-                        continue
-
-                    if c = match(spec.ESCAPECHAR)
-                        last[1] += c
-                        c = next_char()
-                        last[1] += c
-                        continue
-                    if c = match(spec.QUOTATION_MARK1) or
+                        add_str(mode, c)
+                        add_str(mode, next_char())
+                    else if c = match(spec.QUOTATION_MARK1) or
                       c = match(spec.QUOTATION_MARK2) or
                       c = match(spec.QUOTATION_MARK3)
                         mode = c
-                        colored.push(["string", c])
-                        continue
-                    if c = match(spec.LINE_COMMENT)
-                        colored.push(["comment", line[i-1...]])
-                        i = line.length
-                        continue
-                    if old_c in spec.DELIMITERS
-                        skip = @keywords(c, i-1, line, colored, spec)
-                        if skip?
-                            i = skip
-                            continue
+                        add_str("string", c)
 
-                    c = next_char()
-                    if not last? or last[0] != "text"
-                        colored.push(["text", c])
+                    else if c = match(spec.BLOCK_COMMENT[0])
+                        add_str("comment", c)
+                        mode = "block_comment"
+
+                    else if c = match(spec.LINE_COMMENT)
+                        add_str("comment", line[i-1...])
+                        i = line.length
+
+                    else if prev_char() in spec.DELIMITERS
+                        if not keywords()
+                            add_str("text", next_char())
                     else
-                        last[1] += c
+                        add_str("text", next_char())
 
                 when spec.QUOTATION_MARK1, spec.QUOTATION_MARK2, spec.QUOTATION_MARK3
-                    if !last?
-                       colored.push(["string", ""])
-                       last = colored[colored.length-1]
-
                     if c = match(spec.ESCAPECHAR)
-                        last[1] += c
-                        c = next_char()
-                        if c
-                            last[1] += c
-                        continue
-
-                    if c = match(mode)
-                        last[1] += c
+                        add_str("string", c)
+                        add_str("string", next_char())
+                    else if c = match(mode)
+                        add_str("string", c)
                         mode = "plain"
-                        continue
+                    else
+                        add_str("string", next_char())
+                when "block_comment"
+                    if c = match(spec.ESCAPECHAR)
+                        add_str("comment", c)
+                        add_str("comment", next_char())
+                    else if c = match(spec.BLOCK_COMMENT[1])
+                        add_str("comment", c)
+                        mode = "plain"
+                    else
+                        add_str("comment", next_char())
 
-                    c = next_char()
-                    last[1] += c
-
-        console.log JSON.stringify(colored)
+        #console.log JSON.stringify(colored)
         return [colored, [in_mode, mode]]
 
     tokenize_line: ->
@@ -241,20 +252,7 @@ class Tokenizer
         #print "line", [colored, mode, out.join("")]
         return [colored, mode, out.join("")]
 
-    keywords: (c, i, line, colored, spec) ->
-        for k in [0..6]
-            if spec["KEY"+k]?
-                for t in spec["KEY"+k]
-                    if c == t[0]
-                        w = line[i..i+t.length-1]
-                        last = line[i+t.length]
-                        if not last?
-                            last = " "
-                        if w == t and last in spec.DELIMITERS
-                            colored.push(["key"+k, w])
-                            i += t.length
-                            return i
-        return
+
 
 
 # command line diolog

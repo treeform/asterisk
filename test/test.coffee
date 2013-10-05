@@ -1,3 +1,5 @@
+if while else when
+a = "sdfsd" + (b - c) # hey!
 
 # escape
 "sdfsdf
@@ -12,12 +14,14 @@ sdfsdf
 
 """
 
+false true
 
 regex = /\"/gi + "foo"
 
 ###
 
-should be comment
+this should be comment
+if then while true "
 
 ###
 
