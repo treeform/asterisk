@@ -97,6 +97,7 @@ window.specs =
         DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
         ESCAPECHAR: "\\"
         QUOTATION_MARK1: "\""
+        BLOCK_COMMENT: ["",""]
         PAIRS1: "()"
         PAIRS2: "[]"
         PAIRS3: "{}"
@@ -162,6 +163,8 @@ class Tokenizer
             return line[i-1] or " "
 
         match = (str) ->
+            if not str
+                return
             substr = line[i...i + str.length]
             if substr == str
                 i += str.length
@@ -203,7 +206,7 @@ class Tokenizer
                         mode = c
                         add_str("string", c)
 
-                    else if c = match(spec.BLOCK_COMMENT[0])
+                    else if spec.BLOCK_COMMENT and c = match(spec.BLOCK_COMMENT[0])
                         add_str("comment", c)
                         mode = "block_comment"
 
@@ -217,7 +220,8 @@ class Tokenizer
                     else
                         add_str("text", next_char())
 
-                when spec.QUOTATION_MARK1, spec.QUOTATION_MARK2, spec.QUOTATION_MARK3
+                when spec.QUOTATION_MARK1, spec.QUOTATION_MARK2,
+                  spec.QUOTATION_MARK3, spec.QUOTATION_MARK4
                     if c = match(spec.ESCAPECHAR)
                         add_str("string", c)
                         add_str("string", next_char())

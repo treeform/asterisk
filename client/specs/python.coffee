@@ -6,8 +6,10 @@ window.specs.python =
     DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."
     KEYWORD_PREFIX: '&'
     ESCAPECHAR: "\\"
-    QUOTATION_MARK1: "\""
-    QUOTATION_MARK2: "\'"
+    QUOTATION_MARK1: '"""'
+    QUOTATION_MARK2: "'''"
+    QUOTATION_MARK3: '"'
+    QUOTATION_MARK4: "'"
     LINE_COMMENT: "#"
     PAIRS1: "()"
     PAIRS2: "[]"
@@ -29,3 +31,4 @@ window.specs.python =
         min set apply delattr help next setattr
         buffer dict hex object slice coerce dir
         id oct sorted intern".match(/[^ \n]+/g)
+    KEY4: "None True False".split(" ")
