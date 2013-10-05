@@ -202,7 +202,8 @@ class Tokenizer
                         add_str(mode, next_char())
                     else if c = match(spec.QUOTATION_MARK1) or
                       c = match(spec.QUOTATION_MARK2) or
-                      c = match(spec.QUOTATION_MARK3)
+                      c = match(spec.QUOTATION_MARK3) or
+                      c = match(spec.QUOTATION_MARK4)
                         mode = c
                         add_str("string", c)
 
@@ -220,8 +221,7 @@ class Tokenizer
                     else
                         add_str("text", next_char())
 
-                when spec.QUOTATION_MARK1, spec.QUOTATION_MARK2,
-                  spec.QUOTATION_MARK3, spec.QUOTATION_MARK4
+                when spec.QUOTATION_MARK1, spec.QUOTATION_MARK2, spec.QUOTATION_MARK3, spec.QUOTATION_MARK4
                     if c = match(spec.ESCAPECHAR)
                         add_str("string", c)
                         add_str("string", next_char())
