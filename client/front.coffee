@@ -110,7 +110,7 @@ html_safe = (text) ->
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;') #"
-        .replace(/'/g, '&#x27;')
+        .replace(/'/g, '&#x27;') #'
         .replace(/\//g,'&#x2F;');
 
 # its very simple and stupid
@@ -135,7 +135,7 @@ class Tokenizer
                     return
 
     tokenize: (@line, @mode) ->
-        key = @mode+"|"+@line
+        key = @mode + "|" + @line
         if @token_cache[key]
             return @token_cache[key]
         return @token_cache[key] = @tokenize_line()
