@@ -160,6 +160,11 @@ class Tokenizer
             last = colored[colored.length-1]
             switch mode
                 when "plain"
+                    if c == spec.ESCAPECHAR
+                        last[1] += c
+                        c = next()
+                        last[1] += c
+                        continue
                     if c == spec.QUOTATION_MARK1 or
                       c == spec.QUOTATION_MARK2 or
                       c == spec.QUOTATION_MARK3
@@ -175,6 +180,7 @@ class Tokenizer
                         if skip?
                             i = skip
                             continue
+
                     if not last? or last[0] != "text"
                         colored.push(["text", c])
                     else
@@ -623,6 +629,7 @@ class Editor
             'tab': @tab
             'shift-tab': @deindent
             'ctrl-esc': @cmd.envoke
+            'ctrl-i': @cmd.envoke
             'ctrl-g': @goto_cmd.envoke
             'ctrl-o': @open_cmd.envoke
             'ctrl-l': @open_cmd.envoke
