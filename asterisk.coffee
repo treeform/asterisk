@@ -95,7 +95,7 @@ lint = (s, filename) ->
 
 pylint = (s, filename) ->
     print "running lint", s, filename
-    command = "pylint #{filename} -f parseable -r n --disable=W0621"
+    command = "pylint #{filename} -f parseable -r n -d W0621,C0111,C0103,W0403"
     exec command, (error, stdout, stderr) ->
         marks = for line in stdout.split("\n")
             m = line.match(/.*:(\d*):\s\[(.*)\]\s(.*)/)
