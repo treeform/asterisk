@@ -212,7 +212,7 @@ class Tokenizer
                         mode = "block_comment"
 
                     else if c = match(spec.LINE_COMMENT)
-                        add_str("comment", line[i-1...])
+                        add_str("comment", line[(i-spec.LINE_COMMENT.length)...])
                         i = line.length
 
                     else if prev_char() in spec.DELIMITERS
