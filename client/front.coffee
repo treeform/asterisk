@@ -304,7 +304,7 @@ class GotoLine
         esc()
         line = parseInt(@$input.val())
         if line > 0
-            editor.goto_line(line)
+            editor.goto_line(line - 1)
 
 
 # open file and the file autocomplete
