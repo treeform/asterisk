@@ -117,9 +117,10 @@ coffeemake = (s, filename) ->
     command = "coffee -c #{filename}"
     exec command, (error, stdout, stderr) ->
         marks = []
+        #print "stderr", stderr.split("\n")
         for line in stderr.split("\n")
             m = line.match("line (.+):(.*)")
-            print m, line
+            #print "::1", [m, line]
             if m
                 marks.push
                     line: m[1]
@@ -127,13 +128,21 @@ coffeemake = (s, filename) ->
                     text: m[2]
 
             m = line.match(",(.*) on line (.*)")
-            print m, line
+            #print "::2", [m, line]
             if m
                 marks.push
                     line: m[2]
                     tag: 'error'
                     text: m[1]
-        console.log marks
+
+            m = line.match(".*:(.*):.*: error: (.*)")
+            print "::3", [m, line]
+            if m
+                marks.push
+                    line: parseInt(m[1])
+                    tag: 'error'
+                    text: m[2]
+        print "coffee marks", marks
         s.emit 'marks-push',
             filename: filename
             marks: marks

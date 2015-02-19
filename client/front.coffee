@@ -304,7 +304,7 @@ class GotoLine
         esc()
         line = parseInt(@$input.val())
         if line > 0
-            editor.goto_line(line)
+            editor.goto_line(line - 1)
 
 
 # open file and the file autocomplete
@@ -999,13 +999,14 @@ class Editor
 
     # adds the makrs about lint stuff to the editor
     add_marks: (marks) ->
+        console.log "adding marks", marks
         if marks.filename == @filename
             @$marks.html("")
             for mark in marks.marks
                 continue if not mark
                 $line = $("#line"+(mark.line-1))
                 p = $line.position()
-                @$marks.append("<div class='mark' style='top:#{p.top}px'><div class='mark-text'>#{mark.tag}:#{mark.text}</div>&#9679;</div>")
+                @$marks.append("<div class='mark' style='top:#{p.top}px'>#{mark.tag}:#{mark.text}</div>")
 
     clear_makrs: ->
         @$marks.html("")

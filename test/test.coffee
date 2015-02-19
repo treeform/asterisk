@@ -1,5 +1,8 @@
-if while else when
-a = "sdfsd" + (b - c) # hey!
+if foo
+    a = "sdfsd" + (b - c) # hey!
+
+
+(3239 + (sdfsdf) + 4234)
 
 # escape
 "sdfsdf
@@ -14,9 +17,11 @@ sdfsdf
 
 """
 
-false true
+false and true
 
-regex = /\"/gi + "foo"
+if not a?
+
+    regex = /\"/gi + "foo"
 
 ###
 
@@ -25,4 +30,7 @@ if then while true "
 
 ###
 
-a = \" and on and on
+a = " and on and on"
+
+
+sdfsdf

@@ -54,7 +54,6 @@ input:focus {
     position: absolute;
     display: inline-block;
     overflow: visible;
-    background-color: #200;
     white-space: pre-wrap;
 }
 
@@ -81,7 +80,7 @@ input:focus {
 .marks {
     position: absolute;
     top: 100px;
-    z-index: 3;
+    z-index: 1.5;
 }
 
 .highlight {
@@ -266,16 +265,8 @@ input {
 .mark {
     position: absolute;
     right: 0px;
-    color: #833602;
-    z-index: 1000;
-}
-
-.mark-text {
-    position: absolute;
-    right: 15px;
-    display: none;
-    width: 300px;
-    background-color: black;
-    padding: 10px;
-    color: #C5BD00;
+    color: rgba(255, 120, 120, 1);
+    background-color: rgba(255, 0, 0, 0.12);
+    width: 100%;
+    text-align: right;
 }
