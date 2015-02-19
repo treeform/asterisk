@@ -999,6 +999,7 @@ class Editor
 
     # adds the makrs about lint stuff to the editor
     add_marks: (marks) ->
+        console.log "adding marks", marks
         if marks.filename == @filename
             @$marks.html("")
             for mark in marks.marks
