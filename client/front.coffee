@@ -1006,7 +1006,7 @@ class Editor
                 continue if not mark
                 $line = $("#line"+(mark.line-1))
                 p = $line.position()
-                @$marks.append("<div class='mark' style='top:#{p.top}px'><div class='mark-text'>#{mark.tag}:#{mark.text}</div>&#9679;</div>")
+                @$marks.append("<div class='mark' style='top:#{p.top}px'>#{mark.tag}:#{mark.text}</div>")
 
     clear_makrs: ->
         @$marks.html("")
