@@ -123,6 +123,7 @@ coffeemake = (s, filename) ->
         #print "stderr", stderr.split("\n")
         for line in stderr.split("\n")
             m = line.match("line (.+):(.*)")
+            #print "::1", [m, line]
             if m
                 marks.push
                     line: m[1]
@@ -130,6 +131,7 @@ coffeemake = (s, filename) ->
                     text: m[2]
 
             m = line.match(",(.*) on line (.*)")
+            #print "::2", [m, line]
             if m
                 marks.push
                     line: m[2]
@@ -155,11 +157,11 @@ gitdiff = (s, filename) ->
     exec command, (error, stdout, stderr) ->
         marks = []
 
-        make_mark = (regx) ->
+        make_mark = (regex) ->
             m = line.match(regex)
             if m
                 print "GIT", line
-                for i in [0...parseInt(m[2])]
+                for i in [0...parseInt(m[2] or "1")]
                     marks.push
                         line: parseInt(m[1]) + i
                         tag: 'change'
@@ -168,6 +170,7 @@ gitdiff = (s, filename) ->
         for line in stdout.split("\n")
             make_mark("@@ \\-\\d+\\,\\d+? \\+(\\d+),(\\d+) @@")
             make_mark("@@ \\-\\d+\\ \\+(\\d+),(\\d+) @@")
+            make_mark("@@ \\-\\d+\\ \\+(\\d+) @@")
 
         s.emit 'marks-push',
             layer: "diff"

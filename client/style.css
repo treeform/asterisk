@@ -269,7 +269,8 @@ input {
     width: 100%;
     text-align: right;
 }
+
 .mark.change {
-    background-color: #281D00;
+    background-color: #1F1600;
     color: #845B25;
 }
