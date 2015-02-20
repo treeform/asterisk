@@ -87,11 +87,13 @@ class Client
 
 
 lint = (s, filename) ->
+
     if ends_with(filename, ".py")
         pylint(s, filename)
     if ends_with(filename, ".coffee")
         coffeemake(s, filename)
 
+    gitdiff(s, filename)
 
 pylint = (s, filename) ->
     print "running lint", s, filename
@@ -108,6 +110,7 @@ pylint = (s, filename) ->
                 continue
         console.log marks
         s.emit 'marks-push',
+            layer: "error"
             filename: filename
             marks: marks
 
@@ -120,7 +123,6 @@ coffeemake = (s, filename) ->
         #print "stderr", stderr.split("\n")
         for line in stderr.split("\n")
             m = line.match("line (.+):(.*)")
-            #print "::1", [m, line]
             if m
                 marks.push
                     line: m[1]
@@ -128,7 +130,6 @@ coffeemake = (s, filename) ->
                     text: m[2]
 
             m = line.match(",(.*) on line (.*)")
-            #print "::2", [m, line]
             if m
                 marks.push
                     line: m[2]
@@ -144,6 +145,32 @@ coffeemake = (s, filename) ->
                     text: m[2]
         print "coffee marks", marks
         s.emit 'marks-push',
+            layer: "errors"
+            filename: filename
+            marks: marks
+
+gitdiff = (s, filename) ->
+    print "running git diff", filename
+    command = "git diff --no-color -U0 #{filename}"
+    exec command, (error, stdout, stderr) ->
+        marks = []
+
+        make_mark = (regx) ->
+            m = line.match(regex)
+            if m
+                print "GIT", line
+                for i in [0...parseInt(m[2])]
+                    marks.push
+                        line: parseInt(m[1]) + i
+                        tag: 'change'
+                        text: ""
+
+        for line in stdout.split("\n")
+            make_mark("@@ \\-\\d+\\,\\d+? \\+(\\d+),(\\d+) @@")
+            make_mark("@@ \\-\\d+\\ \\+(\\d+),(\\d+) @@")
+
+        s.emit 'marks-push',
+            layer: "diff"
             filename: filename
             marks: marks
 

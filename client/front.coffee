@@ -965,10 +965,6 @@ class Editor
 
         @full_height = @$ghost.height()
         @$pad.height(@full_height+100)
-        #if performance? and performance.now?
-        #    print "        update", performance.now()-now, "ms"
-        #else
-        #    print "        update"
 
     # scroll to a char position
     scroll_pos: (offset) ->
@@ -998,18 +994,26 @@ class Editor
         return top
 
     # adds the makrs about lint stuff to the editor
+    # this is used to show errors or git lines
     add_marks: (marks) ->
-        console.log "adding marks", marks
         if marks.filename == @filename
-            @$marks.html("")
+            $layer = $("#marks-"+marks.layer)
+            console.log "adding marks", marks, $layer
+            $layer.html("")
             for mark in marks.marks
                 continue if not mark
+                console.log "add mark on ", mark.line
                 $line = $("#line"+(mark.line-1))
                 p = $line.position()
-                @$marks.append("<div class='mark' style='top:#{p.top}px'>#{mark.tag}:#{mark.text}</div>")
+                return if not p
+                if mark.tag == "change"
+                    $layer.append("<div class='mark change' style='top:#{p.top}px;'>*</div>")
+                else
+                    $layer.append("<div class='mark' style='top:#{p.top}px;'>#{mark.tag}:#{mark.text}</div>")
 
-    clear_makrs: ->
-        @$marks.html("")
+
+    clear_makrs: (layer) ->
+        $(".marks").html("")
 
     # loop that does the work for rendering when update is requested
     workloop: =>

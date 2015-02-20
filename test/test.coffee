@@ -2,6 +2,8 @@ if foo
     a = "sdfsd" + (b - c) # hey!
 
 
+fo)
+
 (3239 + (sdfsdf) + 4234)
 
 # escape
@@ -13,7 +15,6 @@ ertedfg
 "
 sdfsdf
   \"""
-
 
 """
 
