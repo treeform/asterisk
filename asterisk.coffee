@@ -157,9 +157,6 @@ gitdiff = (s, filename) ->
 
     command = "cd '#{dir}'; git diff --no-color -U0 #{filename}"
     exec command, (error, stdout, stderr) ->
-        console.log "command", command
-        console.log "stdout", stdout
-        console.log "stderr", stderr
         marks = []
 
         make_mark = (regex) ->
