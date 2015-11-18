@@ -157,8 +157,10 @@ coffeemake = (s, filename) ->
             marks: marks
 
 gitdiff = (s, filename) ->
-    print "running git diff", filename
-    command = "git diff --no-color -U0 #{filename}"
+    print "running git diff",
+    dir = filename.match(/(.*\/)[^\/]/)[1]
+
+    command = "cd '#{dir}'; git diff --no-color -U0 #{filename}"
     exec command, (error, stdout, stderr) ->
         marks = []
 
