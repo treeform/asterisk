@@ -1,4 +1,4 @@
-# Asterisk websocket server
+# Asterisk webws server
 
 # <- find file names
 # <- find in files
@@ -6,7 +6,15 @@
 # <- save file
 # -> file changed
 # -> check results
-io = require('socket.io').listen(8080)
+
+#io = require('ws.io').listen(8080)
+
+
+HTTP_PORT = 21988
+WSS_PORT  = 21977
+
+
+WebSocketServer = require('ws').Server
 events = require('events')
 path = require('path')
 child_process = require('child_process')
@@ -47,7 +55,7 @@ server = http.createServer (req, res) ->
         print("client/"+req.url[1..])
         filename = "client/" + req.url[1..].split("?")[0]
         buffer = fs.readFileSync(filename)
-        print "buffer", buffer.length
+        #print "buffer", buffer.length
         #mimeType = mimeTypes[path.extname(filename).split(".").pop()]
         #res.writeHead(200, {'Content-Type': mimeType} )
         res.end(buffer)
@@ -56,7 +64,7 @@ server = http.createServer (req, res) ->
         buffer = fs.readFileSync("client/asterisk.html")
         buffer = buffer.toString().replace("$rand", gen_iden())
         res.end(buffer)
-server.listen(1988)
+server.listen(HTTP_PORT)
 
 
 findem = (dir, s) ->
@@ -81,9 +89,6 @@ file_exists = (filename) ->
     fs.existsSync(filename) and fs.statSync(filename).isFile()
 
 
-clients = {}
-class Client
-    constructor: (@idne) ->
 
 
 lint = (s, filename) ->
@@ -109,7 +114,7 @@ pylint = (s, filename) ->
             else
                 continue
         console.log marks
-        s.emit 'marks-push',
+        s.safeSend 'marks-push',
             layer: "error"
             filename: filename
             marks: marks
@@ -146,7 +151,7 @@ coffeemake = (s, filename) ->
                     tag: 'error'
                     text: m[2]
         print "coffee marks", marks
-        s.emit 'marks-push',
+        s.safeSend 'marks-push',
             layer: "errors"
             filename: filename
             marks: marks
@@ -172,20 +177,17 @@ gitdiff = (s, filename) ->
             make_mark("@@ \\-\\d+\\ \\+(\\d+),(\\d+) @@")
             make_mark("@@ \\-\\d+\\ \\+(\\d+) @@")
 
-        s.emit 'marks-push',
+        s.safeSend 'marks-push',
             layer: "diff"
             filename: filename
             marks: marks
 
 
-io.sockets.on 'connection', (socket) ->
-    iden = gen_iden()
-    clients[iden] = Client(iden)
-    socket.emit('connected', {iden: iden})
-    print iden, ":", "connected"
+wss = new WebSocketServer(port:WSS_PORT)
+
+wss.on 'connection', (ws) ->
 
     loggedin = false
-
     filename = null
 
     # alert the editor when file changes
@@ -198,22 +200,21 @@ io.sockets.on 'connection', (socket) ->
             fs.watchFile filename, (curr, prev) ->
                 if filename and file_exists(filename)
                     file_data = fs.readFileSync(filename, 'utf8')
-                    socket.emit 'open-push',
+                    ws.safeSend 'open-push',
                         filename: filename,
                         data: file_data
-                    lint(socket, filename)
+                    lint(ws, filename)
 
-    socket.on 'auth', (auth) ->
-        if auth.username == config.username and auth.password == config.password
-            socket.emit "loggedin"
-            loggedin = true
-        else
-            socket.emit 'error-push',
-                message: "invalid username or password"
-                kind: "ribbon"
+    ws.safeSend = (msg, kargs) ->
+        try
+            ws.send JSON.stringify
+                msg: msg
+                kargs: kargs
+        catch e
+            console.log(e)
 
     error = (msg) ->
-        socket.emit 'error-push',
+        ws.safeSend 'error-push',
             message: msg
             kind: "ribbon"
 
@@ -222,63 +223,78 @@ io.sockets.on 'connection', (socket) ->
         print "open", filename
         if file_exists(filename)
             file_data = fs.readFileSync(filename, 'utf8')
-            socket.emit 'open-push',
+            ws.safeSend 'open-push',
                 filename: filename
                 data: file_data
-            lint(socket, filename)
+            lint(ws, filename)
             watch()
         else
-            socket.emit 'error-push',
+            ws.safeSend 'error-push',
                 message: "filename '#{req.filename}' not found, saveing will create new file"
                 kind: "ribbon"
             # push an empty file up
-            socket.emit 'open-push',
+            ws.safeSend 'open-push',
                 filename: filename
                 data: ""
 
-    socket.on 'keypress', (data) ->
-        print iden, ":", "keypress", data
+    ws.on 'message', (packet_str) ->
+        packet = JSON.parse(packet_str)
+        msg = packet.msg
+        kargs = packet.kargs
+        console.log "got message", msg, kargs
 
-    socket.on 'open', (req) ->
-        return error("not logged in") if not loggedin
-        open(req)
+        switch msg
 
-    socket.on 'save', (req) ->
-        return error("not logged in") if not loggedin
-        filename = req.filename
-        print "save", filename
-        try
-            fs.writeFileSync(filename, req.data, 'utf8')
-            lint(socket, filename)
-            watch()
-        catch e
-            socket.emit 'error-push',
-                message: "error #{e} writing '#{filename}'"
-                kind: "ribbon"
+            when "auth"
+                if kargs.username == config.username and kargs.password == config.password
+                    ws.safeSend "loggedin"
+                    loggedin = true
+                else
+                    ws.safeSend 'error-push',
+                        message: "invalid username or password"
+                        kind: "ribbon"
 
-    socket.on 'suggest', (req) ->
-        return error("not logged in") if not loggedin
-        s = req.query
-        dir = req.directory
-        if s and s[0] == "/"
-            dir = s[0..s.lastIndexOf("/")-1]
-            s = s[s.lastIndexOf("/")+1..]
-        print "s", s, "dir", dir
-        finder = findem(dir, s)
-        finder.on 'end', (files) ->
-            files = (f for f in files when not f.match ("\.pyc|~|\.git|\.bzr$"))
-            files.sort (a, b) ->
-                al = a.length
-                bl = b.length
-                #al -= 20 if a in recent_files
-                #bl -= 20 if b in recent_files
-                return al - bl
-            files = files[0..30]
-            print files
-            socket.emit "suggest-push",
-                files: files.reverse()
+            when "open"
+                 if not loggedin
+                    return error("not logged in")
+                 open(kargs)
 
-    socket.on 'disconnect', ->
-        print iden, ":", "disconnected"
-        filename = null
-        watch()
+            when 'save'
+                return error("not logged in") if not loggedin
+                filename = kargs.filename
+                print "save", filename
+                try
+                    fs.writeFileSync(filename, kargs.data, 'utf8')
+                    lint(ws, filename)
+                    watch()
+                catch e
+                    ws.safeSend 'error-push',
+                        message: "error #{e} writing '#{filename}'"
+                        kind: "ribbon"
+
+            when  'suggest'
+                if not loggedin
+                    return error("not logged in")
+
+                s = kargs.query
+                dir = kargs.directory
+                if s and s[0] == "/"
+                    dir = s[0..s.lastIndexOf("/")-1]
+                    s = s[s.lastIndexOf("/")+1..]
+                print "s", s, "dir", dir
+                finder = findem(dir, s)
+                finder.on 'end', (files) ->
+                    files = (f for f in files when not f.match ("\.pyc|~|\.git|\.bzr$"))
+                    files.sort (a, b) ->
+                        al = a.length
+                        bl = b.length
+                        #al -= 20 if a in recent_files
+                        #bl -= 20 if b in recent_files
+                        return al - bl
+                    files = files[0..30]
+                    print files
+                    ws.safeSend "suggest-push",
+                        files: files.reverse()
+
+    iden = gen_iden()
+    ws.safeSend('connected', {iden: iden})

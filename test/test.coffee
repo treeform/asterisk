@@ -1,8 +1,9 @@
 if foo
     a = "sdfsd" + (b - c) # hey!
 
+test
 
-fo)
+fo
 
 (3239 + (sdfsdf) + 4234)
 

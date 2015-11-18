@@ -341,7 +341,7 @@ class OpenFile
             chosen.addClass("sug-highlight")
             @$input.val(chosen.text())
         else
-            editor.con.socket.emit "suggest",
+            editor.con.ws.safeSend "suggest",
                 query: @$input.val()
                 directory: @directory
 
@@ -515,6 +515,7 @@ class Auth
             @login()
             return false
 
+    think: ->
         if @$login_username.val()
             @login()
         else
@@ -526,7 +527,7 @@ class Auth
         localStorage.setItem("username", username)
         localStorage.setItem("password", password)
         # send auth info
-        editor.con.socket.emit "auth",
+        editor.con.ws.safeSend "auth",
             username: username
             password: password
 
@@ -543,14 +544,47 @@ class Connection
 
     constructor: ->
         host = window.document.location.host.replace(/:.*/, '')
-        @socket = io.connect("ws://#{host}:8080")
-        @socket.on 'connected', (data) ->
-            console.log("connected with", data.iden)
+        @ws = new WebSocket 'ws://' + location.hostname + ":" + 21977
 
-        @socket.on 'open-push', (res) -> editor.open_cmd.open_push(res)
-        @socket.on 'suggest-push', (res) -> editor.open_cmd.open_suggest_push(res)
-        @socket.on 'loggedin', (res) -> editor.auth.loggedin(res)
-        @socket.on 'error-push', (error) ->
+        @ws.safeSend = (msg, kargs) =>
+            console.log "sending", msg, kargs
+            @ws.send JSON.stringify
+                msg: msg
+                kargs: kargs
+
+
+        @ws.onopen = (data) ->
+            console.log("connected with", data.iden)
+            editor.auth.think()
+
+        @ws.onmessage = (e) ->
+            packet = JSON.parse(e.data)
+            msg = packet.msg
+            kargs = packet.kargs
+            console.log "got message", msg, kargs
+            switch msg
+                when 'open-push'
+                    editor.open_cmd.open_push(kargs)
+                when 'loggedin'
+                    editor.auth.loggedin(kargs)
+                when 'suggest-push'
+                    editor.open_cmd.open_suggest_push(kargs)
+                when 'error-push'
+                    if kargs.message == "invalid username or password"
+                        editor.auth.show()
+                    if kargs.message == "not logged in"
+                        editor.auth.login()
+                    editor.$errorbox.show()
+                    editor.$errorbox.html(kargs.message)
+
+                when 'marks-push'
+                    editor.add_marks(kargs)
+
+
+        ###
+        , (res) ->
+        @ws.on 'loggedin', (res) ->
+        @ws.on 'error-push', (error) ->
             if error.message == "invalid username or password"
                 editor.auth.show()
             if error.message == "not logged in"
@@ -558,8 +592,8 @@ class Connection
             editor.$errorbox.show()
             editor.$errorbox.html(error.message)
 
-        @socket.on 'marks-push', (marks) -> editor.add_marks(marks)
-
+        @ws.on 'marks-push', (marks) ->
+        ###
 
 window.esc = ->
     editor.$errorbox.hide()
@@ -606,7 +640,7 @@ class Editor
             if key.length != 1 and key.indexOf("-") == -1
                 # for all non character keys non meta
                 @undo.snapshot()
-            @con.socket.emit("keypress", key)
+            @con.ws.safeSend("keypress", key)
             if @keymap[key]?
                 @keymap[key]()
                 e.stopPropagation()
@@ -676,7 +710,7 @@ class Editor
 
     # open current file
     open: (filename) =>
-        @con.socket.emit "open",
+        @con.ws.safeSend "open",
              filename: filename
 
     # opened
@@ -708,7 +742,7 @@ class Editor
         text = text.replace(/\t/g, space)
         # strip trailing white space onlines
         text = text.replace(/[ \r]*\n/g,"\n").replace(/\s*$/, "\n")
-        @con.socket.emit "save",
+        @con.ws.safeSend "save",
             filename: @filename
             data: text
 
