@@ -37,7 +37,7 @@ read_config = ->
         return JSON.parse(text)
     catch e
         print "could not parse ~/.asterisk.json"
-    return {'username': 'admin', 'password': '123'}
+    process.exit()
 config = read_config()
 
 
@@ -122,7 +122,7 @@ pylint = (s, filename) ->
 
 coffeemake = (s, filename) ->
     print "running coffee", filename
-    command = "coffee -c #{filename}"
+    command = "coffee -cm #{filename}"
     exec command, (error, stdout, stderr) ->
         marks = []
         #print "stderr", stderr.split("\n")
