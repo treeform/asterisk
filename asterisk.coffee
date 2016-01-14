@@ -89,8 +89,6 @@ file_exists = (filename) ->
     fs.existsSync(filename) and fs.statSync(filename).isFile()
 
 
-
-
 lint = (s, filename) ->
 
     if ends_with(filename, ".py")
@@ -122,7 +120,9 @@ pylint = (s, filename) ->
 
 coffeemake = (s, filename) ->
     print "running coffee", filename
-    command = "coffee -cm #{filename}"
+    path = filename[...filename.lastIndexOf("/")]
+    command = "cd #{path}; coffee -cm #{filename}"
+    console.log "$", command
     exec command, (error, stdout, stderr) ->
         marks = []
         #print "stderr", stderr.split("\n")
@@ -279,6 +279,7 @@ wss.on 'connection', (ws) ->
                     return error("not logged in")
 
                 s = kargs.query
+                console.log "s", kargs.query
                 dir = kargs.directory
                 if s and s[0] == "/"
                     dir = s[0..s.lastIndexOf("/")-1]
