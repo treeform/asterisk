@@ -10,8 +10,8 @@
 #io = require('ws.io').listen(8080)
 
 
-HTTP_PORT = 21988
-WSS_PORT  = 21977
+HTTP_PORT = 1988
+WSS_PORT  = 1977
 
 
 WebSocketServer = require('ws').Server

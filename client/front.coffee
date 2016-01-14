@@ -544,7 +544,7 @@ class Connection
 
     constructor: ->
         host = window.document.location.host.replace(/:.*/, '')
-        @ws = new WebSocket 'ws://' + location.hostname + ":" + 21977
+        @ws = new WebSocket 'ws://' + location.hostname + ":" + 1977
 
         @ws.safeSend = (msg, kargs) =>
             console.log "sending", msg, kargs
