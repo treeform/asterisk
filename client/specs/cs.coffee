@@ -1,4 +1,4 @@
-window.specs.javascript =
+window.specs.csharp =
     NAME: "C#"
     FILE_TYPES: ["cs"]
     CASESEN_SITIVE: true
