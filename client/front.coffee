@@ -1,14 +1,16 @@
-# request animation is a function that fires
-# when browser is ready to redraw the screen again
-# fires around 60fps when tab is open
+
+# nice short cut
+print = (args...) -> console.log(args...)
+
+afterTimeout = (ms, fn) -> setTimeout(fn, ms)
+afterInterval = (ms, fn) -> setInterval(fn, ms)
+
 requestAnimFrame = window.requestAnimationFrame or
         window.webkitRequestAnimationFrame or
         window.mozRequestAnimationFrame or
         window.oRequestAnimationFrame  or
         ((cb) -> window.setTimeout(cb, 1000 / 60))
 
-# nice short cut
-print = (args...) -> console.log(args...)
 
 # keyboard system
 KEY_MAP =
@@ -546,16 +548,25 @@ class Connection
         host = window.document.location.host.replace(/:.*/, '')
         @ws = new WebSocket 'ws://' + location.hostname + ":" + 1977
 
-        @ws.safeSend = (msg, kargs) =>
-            console.log "sending", msg, kargs
-            @ws.send JSON.stringify
-                msg: msg
-                kargs: kargs
+        afterInterval 30000, =>
+            @ws.safeSend("ping", {})
 
+        @ws.safeSend = (msg, kargs) =>
+            console.log "sending", msg, kargs, @ws.readyState, WebSocket.OPEN
+            if @ws.readyState == WebSocket.OPEN
+                @ws.send JSON.stringify
+                    msg: msg
+                    kargs: kargs
+            else
+                @connectionError()
 
         @ws.onopen = (data) ->
             console.log("connected with", data.iden)
             editor.auth.think()
+
+        @ws.onerror = (data) =>
+            @connectionError()
+            #editor.auth.think()
 
         @ws.onmessage = (e) ->
             packet = JSON.parse(e.data)
@@ -595,6 +606,10 @@ class Connection
         @ws.on 'marks-push', (marks) ->
         ###
 
+    connectionError: ->
+        editor.$errorbox.show()
+        editor.$errorbox.html("not connected")
+
 window.esc = ->
     editor.$errorbox.hide()
     editor.focus()
@@ -603,6 +618,7 @@ window.esc = ->
 window.cd = (directory) ->
     editor.open_cmd.directory = directory
     localStorage.setItem("directory", directory)
+
 
 
 # the main editor class
@@ -719,7 +735,11 @@ class Editor
         @fresh = false
         if @filename != filename
             @undo.clear()
-
+        else
+            savedSelection = [
+                @$pad[0].selectionEnd
+                @$pad[0].selectionStart
+            ]
         @filename = filename
         @tokenizer.guess_spec(filename)
         m = filename.match("\/([^\/]*)$")
@@ -731,8 +751,9 @@ class Editor
         @clear_makrs()
         @update()
 
-
-
+        if savedSelection
+            @$pad[0].selectionStart = savedSelection[0]
+            @$pad[0].selectionEnd = savedSelection[1]
 
     # save current file
     save: =>

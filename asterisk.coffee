@@ -89,17 +89,21 @@ file_exists = (filename) ->
     fs.existsSync(filename) and fs.statSync(filename).isFile()
 
 
-lint = (s, filename) ->
-
+postHook = (ws, filename) ->
     if ends_with(filename, ".py")
-        pylint(s, filename)
+        #pylint(s, filename)
+        pycompile(ws, filename)
     if ends_with(filename, ".coffee")
-        coffeemake(s, filename)
+        coffeemake(ws, filename)
+    gitdiff(ws, filename)
 
-    gitdiff(s, filename)
+formatHook = (ws, filename) ->
+    if ends_with(filename, ".py")
+        #pylint(s, filename)
+        pyformat(ws, filename)
 
-pylint = (s, filename) ->
-    print "running lint", s, filename
+pylint = (ws, filename) ->
+    print "running lint", filename
     command = "pylint #{filename} -f parseable -r n -d W0621,C0111,C0103,W0403,R0911,R0912,R0913,R0914"
     exec command, (error, stdout, stderr) ->
         marks = for line in stdout.split("\n")
@@ -112,11 +116,42 @@ pylint = (s, filename) ->
             else
                 continue
         console.log marks
-        s.safeSend 'marks-push',
-            layer: "error"
+        ws.safeSend 'marks-push',
+            layer: "errors"
             filename: filename
             marks: marks
 
+pycompile = (ws, filename) ->
+    print "running py_compile", filename
+    command = "python -m py_compile #{filename}"
+    exec command, (error, stdout, stderr) ->
+        lineNumber = null
+        for line in stderr.split("\n")
+            print ":", line, lineNumber
+            m = line.match(/line (\d+)/)
+            if m
+                lineNumber = m[1]
+        marks = []
+        if lineNumber != null
+            marks = [
+                line: parseInt(lineNumber)
+                tag: "error"
+                text: "SyntaxError"
+            ]
+        ws.safeSend 'marks-push',
+            layer: "errors"
+            filename: filename
+            marks: marks
+
+pyformat = (ws, filename) ->
+    print "running  autopep8 -i ", filename
+    command = "autopep8 -i #{filename}"
+    exec command, (error, stdout, stderr) ->
+        console.log stderr
+        file_data = fs.readFileSync(filename, 'utf8')
+        ws.safeSend 'open-push',
+            filename: filename
+            data: file_data
 
 coffeemake = (s, filename) ->
     print "running coffee", filename
@@ -205,7 +240,7 @@ wss.on 'connection', (ws) ->
                     ws.safeSend 'open-push',
                         filename: filename,
                         data: file_data
-                    lint(ws, filename)
+                    postHook(ws, filename)
 
     ws.safeSend = (msg, kargs) ->
         try
@@ -228,7 +263,7 @@ wss.on 'connection', (ws) ->
             ws.safeSend 'open-push',
                 filename: filename
                 data: file_data
-            lint(ws, filename)
+            postHook(ws, filename)
             watch()
         else
             ws.safeSend 'error-push',
@@ -243,7 +278,8 @@ wss.on 'connection', (ws) ->
         packet = JSON.parse(packet_str)
         msg = packet.msg
         kargs = packet.kargs
-        console.log "got message", msg, kargs
+        if msg != "ping"
+            print "got message", msg
 
         switch msg
 
@@ -267,7 +303,8 @@ wss.on 'connection', (ws) ->
                 print "save", filename
                 try
                     fs.writeFileSync(filename, kargs.data, 'utf8')
-                    lint(ws, filename)
+                    postHook(ws, filename)
+                    #formatHook(ws, filename)
                     watch()
                 catch e
                     ws.safeSend 'error-push',
