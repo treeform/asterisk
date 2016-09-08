@@ -15,7 +15,7 @@ window.specs.python =
     PAIRS2: "[]"
     PAIRS3: "{}"
     KEY1: "break continue elif else for if pass return while and not or in del".split(" ")
-    KEY2: "class def import from lambda except finally raise try yield".split(" ")
+    KEY2: "class def import as from lambda except finally raise try yield".split(" ")
     KEY3: "abs divmod input open staticmethod
         all enumerate int ord str
         any eval isinstance pow sum
