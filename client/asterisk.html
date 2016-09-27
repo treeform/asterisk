@@ -5,7 +5,6 @@
     <link rel="stylesheet" type="text/css" href="/style.css"/>
     <link id="favicon" rel="icon" type="image/png" href="/favicon.png" />
     <script src="/lib/jquery-1.10.2.min.js"></script>
-    <script src="/lib/socket.io.min.js"></script>
     <script src="/lib/coffee-script.js"></script>
     <script src="/front.js?_=$rand"></script>
     <script src="/specs/python.js?_=$rand"></script>
@@ -15,6 +14,7 @@
     <script src="/specs/go.js?_=$rand"></script>
     <script src="/specs/javascript.js?_=$rand"></script>
     <script src="/specs/cs.js?_=$rand"></script>
+    <script src="/specs/ng.js?_=$rand"></script>
 </head>
 <body>
 
@@ -22,6 +22,7 @@
     <div class="holder">
         <div id="marks-diff" class="marks"></div>
         <div id="marks-errors" class="marks"></div>
+        <div id="marks-lint" class="marks"></div>
 
         <textarea id="pad" class="pad"></textarea>
         <div class="ghost"></div>

@@ -546,7 +546,7 @@ class Connection
 
     constructor: ->
         host = window.document.location.host.replace(/:.*/, '')
-        @ws = new WebSocket 'ws://' + location.hostname + ":" + 1977
+        @ws = new WebSocket 'ws://' + location.hostname + ":" + 1877
 
         afterInterval 30000, =>
             @ws.safeSend("ping", {})
@@ -630,7 +630,7 @@ class Editor
         window.editor = @
         @con = new Connection()
         @filename = "untiled"
-        @tab_width = 4
+        @tab_width = 2
 
         # grab common elements
         @$doc = $(document)

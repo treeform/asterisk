@@ -10,8 +10,8 @@
 #io = require('ws.io').listen(8080)
 
 
-HTTP_PORT = 1988
-WSS_PORT  = 1977
+HTTP_PORT = 1888
+WSS_PORT  = 1877
 
 
 WebSocketServer = require('ws').Server
@@ -71,13 +71,15 @@ findem = (dir, s) ->
     ev = new events.EventEmitter()
     if s.length > 0
         s = "-name '*#{s}*'"
+    console.log "find #{dir} #{s} -maxdepth 15"
     ls = child_process.exec(
-        "find #{dir} #{s} -maxdepth 5")
+        "find #{dir} #{s} -maxdepth 15")
     files = []
     ls.data = ""
     ls.stdout.on "data", (data) ->
         ls.data += data
     ls.on "exit", ->
+        console.log ls.data
         for line in ls.data.split("\n")
             if line.length > 0
                 files.push(line)
@@ -95,6 +97,8 @@ postHook = (ws, filename) ->
         pycompile(ws, filename)
     if ends_with(filename, ".coffee")
         coffeemake(ws, filename)
+    if ends_with(filename, ".js")
+        jslint(ws, filename)
     gitdiff(ws, filename)
 
 formatHook = (ws, filename) ->
@@ -197,27 +201,65 @@ gitdiff = (s, filename) ->
 
     command = "cd '#{dir}'; git diff --no-color -U0 #{filename}"
     exec command, (error, stdout, stderr) ->
-        marks = []
+        try
+            marks = []
+            for line in stdout.split("\n")
+                changed = line.split("@@")[1]
+                if changed
+                    changes = changed.trim().split(" ")
+                    delLine = -parseInt(changes[0].split(",")[0])
+                    delNumb = parseInt(changes[0].split(",")[1] or "1")
+                    addLine = parseInt(changes[1].split(",")[0])
+                    addNumb = parseInt(changes[1].split(",")[1] or "1")
+                    for i in [0...addNumb]
+                        marks.push
+                            line: addLine + i
+                            tag: 'change'
+                            text: ""
 
-        make_mark = (regex) ->
-            m = line.match(regex)
+            s.safeSend 'marks-push',
+                layer: "diff"
+                filename: filename
+                marks: marks
+        catch err
+            console.log "issue with git", err
+
+jslint = (ws, filename) ->
+    command = "esvalidate #{filename}"
+    exec command, (error, stdout, stderr) ->
+        marks = for line in stdout.split("\n")
+            m = line.match(/Error: Line (\d*): (.*)/)
             if m
-                print "GIT", line
-                for i in [0...parseInt(m[2] or "1")]
-                    marks.push
-                        line: parseInt(m[1]) + i
-                        tag: 'change'
-                        text: ""
-
-        for line in stdout.split("\n")
-            make_mark("@@ \\-\\d+\\,\\d+? \\+(\\d+),(\\d+) @@")
-            make_mark("@@ \\-\\d+\\ \\+(\\d+),(\\d+) @@")
-            make_mark("@@ \\-\\d+\\ \\+(\\d+) @@")
-
-        s.safeSend 'marks-push',
-            layer: "diff"
+                mark =
+                    line: m[1]
+                    tag: 'error'
+                    text: m[2]
+            else
+                continue
+        ws.safeSend 'marks-push',
+            layer: "errors"
             filename: filename
             marks: marks
+
+
+    command = "gjslint #{filename}"
+    exec command, (error, stdout, stderr) ->
+        marks = for line in stdout.split("\n")
+            m = line.match(/Line (\d*), (.*):(.*)/)
+            if m
+                mark =
+                    line: m[1]
+                    tag: m[2]
+                    text: m[3]
+            else
+                continue
+        ws.safeSend 'marks-push',
+            layer: "lint"
+            filename: filename
+            marks: marks
+
+
+
 
 
 wss = new WebSocketServer(port:WSS_PORT)
@@ -324,7 +366,7 @@ wss.on 'connection', (ws) ->
                 print "s", s, "dir", dir
                 finder = findem(dir, s)
                 finder.on 'end', (files) ->
-                    files = (f for f in files when not f.match ("\.pyc|~|\.git|\.bzr$"))
+                    files = (f for f in files when not f.match ("\.pyc$|~|\.git$|\.bzr$"))
                     files.sort (a, b) ->
                         al = a.length
                         bl = b.length
