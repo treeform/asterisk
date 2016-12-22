@@ -10,8 +10,8 @@
 #io = require('ws.io').listen(8080)
 
 
-HTTP_PORT = 1888
-WSS_PORT  = 1877
+HTTP_PORT = 1988
+WSS_PORT  = 1977
 
 
 WebSocketServer = require('ws').Server
@@ -48,9 +48,34 @@ mimeTypes = {
     "css": "text/css"};
 
 
+authorized = (req, res) ->
+    auth = req.headers['authorization']
+    if not auth
+        res.statusCode = 401;
+        res.setHeader('WWW-Authenticate', 'Basic realm="Secure Area"');
+        res.end('<html><body>Need some creds son</body></html>');
+        return false
+
+    tmp = auth.split(' ')
+    buf = new Buffer(tmp[1], 'base64')
+    plain_auth = buf.toString()
+    creds = plain_auth.split(':')
+    username = creds[0]
+    password = creds[1]
+
+    if username == config.username and password == config.password
+        return true
+    else
+        res.statusCode = 401 # Force them to retry authentication
+        res.setHeader('WWW-Authenticate', 'Basic realm="Secure Area"')
+        res.end('<html><body>You shall not pass</body></html>')
+        return false
+
+
 begins_with = (str, frag) -> str.match(new RegExp "^#{frag}")?
 ends_with = (str, frag) -> str.match(new RegExp "#{frag}$")?
 server = http.createServer (req, res) ->
+    return if not authorized(req, res)
     try
         print("client/"+req.url[1..])
         filename = "client/" + req.url[1..].split("?")[0]
@@ -64,13 +89,19 @@ server = http.createServer (req, res) ->
         buffer = fs.readFileSync("client/asterisk.html")
         buffer = buffer.toString().replace("$rand", gen_iden())
         res.end(buffer)
-server.listen(HTTP_PORT)
+server.listen(HTTP_PORT, "localhost")
 
 
 findem = (dir, s) ->
     ev = new events.EventEmitter()
-    if s.length > 0
+    if s[0...2] == "~/"
+        dir = "~"
+        s = "-name '*#{s[2...]}*'"
+    else if s.length > 0
         s = "-name '*#{s}*'"
+
+    console.log "findem", s
+
     console.log "find #{dir} #{s} -maxdepth 15"
     ls = child_process.exec(
         "find #{dir} #{s} -maxdepth 15")
@@ -259,10 +290,7 @@ jslint = (ws, filename) ->
             marks: marks
 
 
-
-
-
-wss = new WebSocketServer(port:WSS_PORT)
+wss = new WebSocketServer(port:WSS_PORT, host:"localhost")
 
 wss.on 'connection', (ws) ->
 
@@ -324,6 +352,8 @@ wss.on 'connection', (ws) ->
             print "got message", msg
 
         switch msg
+            when "ping"
+                ws.safeSend 'pong'
 
             when "auth"
                 if kargs.username == config.username and kargs.password == config.password
@@ -353,10 +383,9 @@ wss.on 'connection', (ws) ->
                         message: "error #{e} writing '#{filename}'"
                         kind: "ribbon"
 
-            when  'suggest'
+            when 'suggest'
                 if not loggedin
                     return error("not logged in")
-
                 s = kargs.query
                 console.log "s", kargs.query
                 dir = kargs.directory

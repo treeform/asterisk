@@ -2,6 +2,7 @@
 # nice short cut
 print = (args...) -> console.log(args...)
 
+String::contains = (s) -> @indexOf(s) != -1
 afterTimeout = (ms, fn) -> setTimeout(fn, ms)
 afterInterval = (ms, fn) -> setInterval(fn, ms)
 
@@ -309,6 +310,41 @@ class GotoLine
             editor.goto_line(line - 1)
 
 
+class Replacer
+
+    styleChange: ->
+
+        [text, [start, end], s] = editor.get_text_state()
+        console.log "style changer",
+        word = text[start...end]
+
+
+        startsUpper = word[0].toUpperCase() == word[0]
+        onlyLower = word.toLowerCase() == word
+        onlyUpper = word.toUpperCase() == word
+        hasUnderScore = word[0...word.length - 1].contains("_")
+
+        ###
+            styles:
+                1 SuperWidgetThing
+                2 superWidgetThing
+                3 super_widget_thing
+                4 SUPER_WIDGET_THING
+        ###
+        if onlyUpper
+            style = 4
+        else if hasUnderScore
+            if onlyLower
+                style = 3
+            else
+                style = 4
+        else
+            if startsUpper
+                style = 1
+            else
+                style = 2
+
+
 # open file and the file autocomplete
 class OpenFile
 
@@ -546,10 +582,13 @@ class Connection
 
     constructor: ->
         host = window.document.location.host.replace(/:.*/, '')
-        @ws = new WebSocket 'ws://' + location.hostname + ":" + 1877
+        @ws = new WebSocket 'ws://' + location.hostname + ":" + 1977
 
-        afterInterval 30000, =>
+        afterInterval 1000, =>
             @ws.safeSend("ping", {})
+            if @lastPong < Date.now() - 30 * 1000
+                console.log "no pongs"
+                @ws.close()
 
         @ws.safeSend = (msg, kargs) =>
             console.log "sending", msg, kargs, @ws.readyState, WebSocket.OPEN
@@ -572,8 +611,11 @@ class Connection
             packet = JSON.parse(e.data)
             msg = packet.msg
             kargs = packet.kargs
-            console.log "got message", msg, kargs
+            if msg != "pong"
+                console.log "got message", msg, kargs
             switch msg
+                when 'pong'
+                    @lastPong = Date.now()
                 when 'open-push'
                     editor.open_cmd.open_push(kargs)
                 when 'loggedin'
@@ -590,21 +632,6 @@ class Connection
 
                 when 'marks-push'
                     editor.add_marks(kargs)
-
-
-        ###
-        , (res) ->
-        @ws.on 'loggedin', (res) ->
-        @ws.on 'error-push', (error) ->
-            if error.message == "invalid username or password"
-                editor.auth.show()
-            if error.message == "not logged in"
-                editor.auth.login()
-            editor.$errorbox.show()
-            editor.$errorbox.html(error.message)
-
-        @ws.on 'marks-push', (marks) ->
-        ###
 
     connectionError: ->
         editor.$errorbox.show()
@@ -703,6 +730,7 @@ class Editor
         @open_cmd = new OpenFile()
         @search_cmd = new SearchBox()
         @undo = new UndoStack()
+        @replacer = new Replacer()
 
         @keymap =
             'esc': esc
@@ -717,6 +745,7 @@ class Editor
             'ctrl-f': @search_cmd.envoke
             'ctrl-z': @undo.undo
             'ctrl-shift-z': @undo.redo
+            'ctrl-e': @replacer.styleChange
 
         @focus()
 
@@ -842,7 +871,8 @@ class Editor
 
         lines = (l[3] for l in @lines)
         for n in [start..end]
-            lines[n] = "    " + lines[n]
+            for t in [0...@tab_width]
+                lines[n] = " " + lines[n]
         text = (l for l in lines).join("\n")
         @set_text(text)
 
