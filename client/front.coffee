@@ -341,6 +341,15 @@ class Replacer
             else
                 style = 2
 
+    sort: ->
+        [text, [start, end], scroll] = editor.get_text_state()
+        area = text[start...end]
+        lines = area.split("\n")
+        lines.sort()
+        area = lines.join("\n")
+        text = text[0...start] + area + text[end...]
+        editor.set_text_state([text, [start, end], scroll])
+
 
 # open file and the file autocomplete
 class OpenFile
@@ -586,7 +595,6 @@ class Connection
                 @ws.close()
                 @reconnect()
             else
-                print "last pong", lastPongTime
                 @ws.safeSend("ping", {})
         @reconnect()
 
@@ -596,7 +604,6 @@ class Connection
         @ws = new WebSocket 'ws://' + location.hostname + ":" + 1977
 
         @ws.safeSend = (msg, kargs) =>
-            print "sending", msg, kargs, @ws.readyState, WebSocket.OPEN
             if @ws.readyState == WebSocket.OPEN
                 @ws.send JSON.stringify
                     msg: msg
@@ -621,7 +628,6 @@ class Connection
             switch msg
                 when 'pong'
                     @lastPong = Date.now()
-                    print "got pong"
                 when 'open-push'
                     editor.open_cmd.open_push(kargs)
                 when 'loggedin'
@@ -760,6 +766,7 @@ class Editor
             'ctrl-z': @undo.undo
             'ctrl-shift-z': @undo.redo
             'ctrl-e': @replacer.styleChange
+            'ctrl-y': @replacer.sort
 
         @focus()
 

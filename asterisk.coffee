@@ -41,11 +41,11 @@ read_config = ->
 config = read_config()
 
 
-mimeTypes = {
-    "html": "text/html",
-    "png": "image/png",
-    "js": "text/javascript",
-    "css": "text/css"};
+mimeTypes =
+    "html": "text/html"
+    "png": "image/png"
+    "js": "text/javascript"
+    "css": "text/css"
 
 
 authorized = (req, res) ->
@@ -79,10 +79,10 @@ server = http.createServer (req, res) ->
     try
         print("client/"+req.url[1..])
         filename = "client/" + req.url[1..].split("?")[0]
+        mimeType = mimeTypes[filename.split(".").pop()]
+        if mimeType
+            res.writeHead(200, {'Content-Type': mimeType})
         buffer = fs.readFileSync(filename)
-        #print "buffer", buffer.length
-        #mimeType = mimeTypes[path.extname(filename).split(".").pop()]
-        #res.writeHead(200, {'Content-Type': mimeType} )
         res.end(buffer)
     catch e
         print e
