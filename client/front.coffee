@@ -578,14 +578,22 @@ class Auth
 class Connection
 
     constructor: ->
+        @lastPong = Date.now()
+        afterInterval 1000, =>
+            lastPongTime = Date.now() - @lastPong
+            if lastPongTime > 10 * 1000 or @ws.readyState == 3
+                print "no pongs, trying to reconnect", lastPongTime
+                @ws.close()
+                @reconnect()
+            else
+                print "last pong", lastPongTime
+                @ws.safeSend("ping", {})
+        @reconnect()
+
+    reconnect: ->
+        @lastPong = Date.now()
         host = window.document.location.host.replace(/:.*/, '')
         @ws = new WebSocket 'ws://' + location.hostname + ":" + 1977
-
-        afterInterval 1000, =>
-            @ws.safeSend("ping", {})
-            if @lastPong < Date.now() - 30 * 1000
-                print "no pongs"
-                @ws.close()
 
         @ws.safeSend = (msg, kargs) =>
             print "sending", msg, kargs, @ws.readyState, WebSocket.OPEN
@@ -604,7 +612,7 @@ class Connection
             @connectionError()
             #editor.auth.think()
 
-        @ws.onmessage = (e) ->
+        @ws.onmessage = (e) =>
             packet = JSON.parse(e.data)
             msg = packet.msg
             kargs = packet.kargs
@@ -613,6 +621,7 @@ class Connection
             switch msg
                 when 'pong'
                     @lastPong = Date.now()
+                    print "got pong"
                 when 'open-push'
                     editor.open_cmd.open_push(kargs)
                 when 'loggedin'
