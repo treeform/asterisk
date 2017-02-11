@@ -1,6 +1,7 @@
 window.specs.javascript =
     NAME: "Javascript"
     FILE_TYPES: ["js"]
+    TAB_INDNET: 2
     CASESEN_SITIVE: true
     MULTILINE_STR: true
     DELIMITERS: " (){}[]<>+-*/%=\"'~!@#&$^&|\\?:;,."

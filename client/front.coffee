@@ -771,6 +771,7 @@ class Editor
             ]
         @filename = filename
         @tokenizer.guess_spec(filename)
+        @tab_width = @tokenizer.spec.TAB_INDNET or 4
         m = filename.match("\/([^\/]*)$")
         title = if m then m.pop() else filename
         $("title").html(title)
@@ -870,9 +871,11 @@ class Editor
            just_tab = true
 
         lines = (l[3] for l in @lines)
+        tab_str = ""
+        for n in [0...@tab_width]
+            tab_str += " "
         for n in [start..end]
-            for t in [0...@tab_width]
-                lines[n] = " " + lines[n]
+            lines[n] = tab_str + lines[n]
         text = (l for l in lines).join("\n")
         @set_text(text)
 
