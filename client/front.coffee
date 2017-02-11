@@ -133,7 +133,6 @@ class Tokenizer
             ext = m.pop()
         for name, spec of specs
             for t in spec.FILE_TYPES
-                console.log t, name, specs
                 if ext == t
                     @spec = spec
                     @token_cache = {}
@@ -243,7 +242,6 @@ class Tokenizer
                     else
                         add_str("comment", next_char())
 
-        #console.log JSON.stringify(colored)
         return [colored, [in_mode, mode]]
 
     tokenize_line: ->
@@ -315,7 +313,6 @@ class Replacer
     styleChange: ->
 
         [text, [start, end], s] = editor.get_text_state()
-        console.log "style changer",
         word = text[start...end]
 
 
@@ -587,11 +584,11 @@ class Connection
         afterInterval 1000, =>
             @ws.safeSend("ping", {})
             if @lastPong < Date.now() - 30 * 1000
-                console.log "no pongs"
+                print "no pongs"
                 @ws.close()
 
         @ws.safeSend = (msg, kargs) =>
-            console.log "sending", msg, kargs, @ws.readyState, WebSocket.OPEN
+            print "sending", msg, kargs, @ws.readyState, WebSocket.OPEN
             if @ws.readyState == WebSocket.OPEN
                 @ws.send JSON.stringify
                     msg: msg
@@ -600,7 +597,7 @@ class Connection
                 @connectionError()
 
         @ws.onopen = (data) ->
-            console.log("connected with", data.iden)
+            print "connected with", data.iden
             editor.auth.think()
 
         @ws.onerror = (data) =>
@@ -612,7 +609,7 @@ class Connection
             msg = packet.msg
             kargs = packet.kargs
             if msg != "pong"
-                console.log "got message", msg, kargs
+                print "got message", msg, kargs
             switch msg
                 when 'pong'
                     @lastPong = Date.now()
@@ -684,6 +681,14 @@ class Editor
                 # for all non character keys non meta
                 @undo.snapshot()
             @con.ws.safeSend("keypress", key)
+            if e.which == 13
+                # some times browsers scrolls on enter
+                # just started happening on Feb 11 2017
+                # to prevent this manually insert new line
+                e.stopPropagation()
+                e.preventDefault()
+                @insert_text("\n")
+
             if @keymap[key]?
                 @keymap[key]()
                 e.stopPropagation()
@@ -999,10 +1004,7 @@ class Editor
                     oldline = @lines[i]
                     oldline[1] = start
                     oldline[2] = end
-                    #console.log [oldline[3], "!=", line, "or", oldline[4], "!=", prev_mode]
                     if oldline[3] != line or prev_mode[1] != oldline[4][0]
-                    #iif oldline[3] != line or oldline[4] != prev_mode
-                        #console.log "true"
                         [colored, mode, html] = @tokenizer.tokenize(line, prev_mode)
                         oldline[3] = line
                         oldline[4] = mode
@@ -1086,11 +1088,9 @@ class Editor
     add_marks: (marks) ->
         if marks.filename == @filename
             $layer = $("#marks-"+marks.layer)
-            console.log "adding marks", marks, $layer
             $layer.html("")
             for mark in marks.marks
                 continue if not mark
-                console.log "add mark on ", mark.line
                 $line = $("#line"+(mark.line-1))
                 p = $line.position()
                 return if not p
