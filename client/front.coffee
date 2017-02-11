@@ -681,7 +681,7 @@ class Editor
                 # for all non character keys non meta
                 @undo.snapshot()
             @con.ws.safeSend("keypress", key)
-            if e.which == 13
+            if e.which == 13 and document.activeElement == @$pad[0]
                 # some times browsers scrolls on enter
                 # just started happening on Feb 11 2017
                 # to prevent this manually insert new line
