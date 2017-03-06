@@ -79,10 +79,10 @@ server = http.createServer (req, res) ->
     try
         print("client/"+req.url[1..])
         filename = "client/" + req.url[1..].split("?")[0]
+        buffer = fs.readFileSync(filename)
         mimeType = mimeTypes[filename.split(".").pop()]
         if mimeType
             res.writeHead(200, {'Content-Type': mimeType})
-        buffer = fs.readFileSync(filename)
         res.end(buffer)
     catch e
         print e
@@ -128,6 +128,8 @@ postHook = (ws, filename) ->
         pycompile(ws, filename)
     if ends_with(filename, ".coffee")
         coffeemake(ws, filename)
+    if ends_with(filename, ".ts")
+        tsmake(ws, filename)
     if ends_with(filename, ".js")
         jslint(ws, filename)
     gitdiff(ws, filename)
@@ -225,6 +227,29 @@ coffeemake = (s, filename) ->
             layer: "errors"
             filename: filename
             marks: marks
+
+
+tsmake = (s, filename) ->
+    print "running typescript", filename
+    path = filename[...filename.lastIndexOf("/")]
+    command = "cd #{path}; tsc --outDir /tmp #{filename} "
+    console.log "$", command
+    exec command, (error, stdout, stderr) ->
+        marks = []
+        #print "stdout", stdout.split("\n")
+        for line in stdout.split("\n")
+            m = line.match(".*ts\\((\\d+),(\\d+)\\): error TS\\d+: (.*)")
+            if m
+                marks.push
+                    line: parseInt(m[1])
+                    tag: 'error'
+                    text: m[3]
+        print "typescript marks", marks
+        s.safeSend 'marks-push',
+            layer: "errors"
+            filename: filename
+            marks: marks
+
 
 gitdiff = (s, filename) ->
     print "running git diff",
