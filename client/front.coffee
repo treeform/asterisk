@@ -879,7 +879,10 @@ class Editor
     # insert text into the selected range
     insert_text: (add) =>
         [text, [start, end], s] = @get_text_state()
-        text = text[..start-1] + add + text[end..]
+        if start == 0
+            text = add + text[end..]
+        else
+            text = text[..start-1] + add + text[end..]
         start += add.length
         end += add.length
         @set_text_state([text, [start, end], s])
