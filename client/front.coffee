@@ -696,6 +696,7 @@ class Editor
                 # for all non character keys non meta
                 @undo.snapshot()
             @con.ws.safeSend("keypress", key)
+
             if e.which == 13 and document.activeElement == @$pad[0]
                 # some times browsers scrolls on enter
                 # just started happening on Feb 11 2017
@@ -703,6 +704,15 @@ class Editor
                 e.stopPropagation()
                 e.preventDefault()
                 @insert_text("\n")
+
+            if e.metaKey and e.which == 86 and document.activeElement == @$pad[0]
+                # some times browsers scrolls on enter
+                # just started happening on Mar 15 2017
+                # to prevent this manually insert new line
+                topScroll = document.activeElement.scrollTop
+                afterTimeout 1, ->
+                    document.activeElement.scrollTop = topScroll
+                #@insert_text("\n")
 
             if @keymap[key]?
                 @keymap[key]()
@@ -954,7 +964,8 @@ class Editor
         @$pad.val(text_state[0])
         @$pad[0].selectionEnd = text_state[1][0]
         @$pad[0].selectionStart = text_state[1][1]
-        @$holder.stop(true).animate(scrollTop: text_state[2])
+        if text_state[2] != 0
+            @$holder.stop(true).animate(scrollTop: text_state[2])
         @update()
 
     # gets the state of the text
