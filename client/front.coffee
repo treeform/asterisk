@@ -706,13 +706,12 @@ class Editor
                 @insert_text("\n")
 
             if e.metaKey and e.which == 86 and document.activeElement == @$pad[0]
-                # some times browsers scrolls on enter
+                # some times browsers scrolls on paste
                 # just started happening on Mar 15 2017
-                # to prevent this manually insert new line
+                # fix scoll after paste
                 topScroll = document.activeElement.scrollTop
                 afterTimeout 1, ->
                     document.activeElement.scrollTop = topScroll
-                #@insert_text("\n")
 
             if @keymap[key]?
                 @keymap[key]()
