@@ -30,13 +30,17 @@ gen_iden = -> Math.random().toString(32)[2..]
 
 read_config = ->
     try
-        text = fs.readFileSync(process.env.HOME + "/.asterisk.json", 'utf8')
+        text = fs.readFileSync(".asterisk.json", 'utf8')
     catch e
-        print "could not read ~/.asterisk.json"
+        print "could not read .asterisk.json"
+        try
+            text = fs.readFileSync(process.env.HOME + "/.asterisk.json", 'utf8')
+        catch e
+            print "could not read ~/.asterisk.json"
     try
         return JSON.parse(text)
     catch e
-        print "could not parse ~/.asterisk.json"
+        print "could not parse any .asterisk.json"
     process.exit()
 config = read_config()
 
@@ -89,6 +93,7 @@ server = http.createServer (req, res) ->
         buffer = fs.readFileSync("client/asterisk.html")
         buffer = buffer.toString().replace("$rand", gen_iden())
         res.end(buffer)
+console.log("Starting sever on http://locahost:" + HTTP_PORT)
 server.listen(HTTP_PORT, "localhost")
 
 
