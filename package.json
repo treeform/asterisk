@@ -5,6 +5,6 @@
     "description": "Asterisk is a Web-based minimalistic code editor written in CoffeeScript running on node.js with WebSockets.",
     "repository": "https://github.com/treeform/asterisk",
     "dependencies": {
-        "ws": "^7.2.1"
+        "ws": "^7.4.6"
     }
 }
